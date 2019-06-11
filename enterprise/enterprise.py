@@ -3,9 +3,10 @@
 
 import os
 from datetime import datetime
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+from sqlalchemy.exc import ArgumentError
 
 if os.getenv('RDS_HOST') is not None:
     DB_HOST = os.environ['RDS_HOST']
@@ -32,7 +33,7 @@ class Enterprise(DB.Model):
     name = DB.Column(DB.String(255), nullable=False)
     created_at = DB.Column(DB.DateTime, nullable=False,
                            default=datetime.utcnow)
-    modified = DB.Column(DB.DateTime)
+    modified = DB.Column(DB.DateTime, nullable=True)
 
 
 class EnterpriseSchema(MA.ModelSchema):
@@ -46,7 +47,7 @@ ENTERPRISE_SCHEMA = EnterpriseSchema()
 ENTERPRISES_SCHEMA = EnterpriseSchema(many=True)
 
 
-@APP.route('/api/enterprise')
+@APP.route('/api/enterprise', methods=['GET'])
 def enterprises():
     """Function to list all existent Enterprises"""
     all_enterprises = Enterprise.query.all()
@@ -54,7 +55,51 @@ def enterprises():
     return jsonify(result.data)
 
 
-@APP.route('/api/enterprise/<ref>')
+@APP.route('/api/enterprise', methods=['POST'])
+def set_enterprise():
+    """Function to list all existent Enterprises"""
+    enterprise = Enterprise(name=request.form['name'])
+    try:
+        DB.session.add(enterprise)
+        DB.session.commit()
+    except ArgumentError:
+        DB.session.rollback()
+        return make_response('ERROR', 400)
+
+    return make_response('SUCCESS', 200)
+
+
+@APP.route('/api/enterprise', methods=['PUT'])
+def chg_enterprise():
+    """Function to list all existent Enterprises"""
+    try:
+        enterprise = Enterprise.query.\
+            filter_by(referer=request.form['referer']).first()
+        enterprise.name = request.form['name']
+        DB.session.commit()
+    except ArgumentError:
+        DB.session.rollback()
+        raise
+
+    return make_response('SUCCESS', 200)
+
+
+@APP.route('/api/enterprise', methods=['DELETE'])
+def del_enterprise():
+    """Function to list all existent Enterprises"""
+    try:
+        enterprise = Enterprise.query.\
+            filter_by(referer=request.form['referer']).first()
+        DB.session.delete(enterprise)
+        DB.session.commit()
+    except ArgumentError:
+        DB.session.rollback()
+        raise
+
+    return make_response('SUCCESS', 200)
+
+
+@APP.route('/api/enterprise/<uuid:ref>', methods=['GET'])
 def get(ref):
     """Function to show a Enterprise by its referer"""
     enterprise = Enterprise.query.filter_by(referer=ref).first()
