@@ -1,5 +1,5 @@
-*
-!.gitignore
+.gitignore
 .mypy_cache/
 .vscode/
 __pycache__/
+zappa_settings.json

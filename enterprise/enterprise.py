@@ -2,6 +2,7 @@
 """Lambda function to process Enterprise Entities"""
 
 import os
+import uuid
 from datetime import datetime
 from flask import Flask, jsonify, request, make_response
 from flask_sqlalchemy import SQLAlchemy
@@ -47,6 +48,12 @@ ENTERPRISE_SCHEMA = EnterpriseSchema()
 ENTERPRISES_SCHEMA = EnterpriseSchema(many=True)
 
 
+@APP.route('/', methods=['GET'])
+def healthcheck():
+    """Return a single message to check if the service is on"""
+    return "OK"
+
+
 @APP.route('/api/enterprise', methods=['GET'])
 def enterprises():
     """Function to list all existent Enterprises"""
@@ -58,7 +65,7 @@ def enterprises():
 @APP.route('/api/enterprise', methods=['POST'])
 def set_enterprise():
     """Function to list all existent Enterprises"""
-    enterprise = Enterprise(name=request.form['name'])
+    enterprise = Enterprise(name=request.form['name'], referer=str(uuid.uuid4()))
     try:
         DB.session.add(enterprise)
         DB.session.commit()
@@ -102,5 +109,5 @@ def del_enterprise():
 @APP.route('/api/enterprise/<uuid:ref>', methods=['GET'])
 def get(ref):
     """Function to show a Enterprise by its referer"""
-    enterprise = Enterprise.query.filter_by(referer=ref).first()
+    enterprise = Enterprise.query.filter_by(referer=str(ref)).first()
     return ENTERPRISE_SCHEMA.jsonify(enterprise)
