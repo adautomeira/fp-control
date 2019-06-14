@@ -51,7 +51,7 @@ ENTERPRISES_SCHEMA = EnterpriseSchema(many=True)
 @APP.route('/', methods=['GET'])
 def healthcheck():
     """Return a single message to check if the service is on"""
-    return "OK"
+    return make_response('OK', 200)
 
 
 @APP.route('/api/enterprise', methods=['GET'])
@@ -65,7 +65,8 @@ def enterprises():
 @APP.route('/api/enterprise', methods=['POST'])
 def set_enterprise():
     """Function to list all existent Enterprises"""
-    enterprise = Enterprise(name=request.form['name'], referer=str(uuid.uuid4()))
+    enterprise = Enterprise(name=request.form['name'],
+                            referer=str(uuid.uuid4()))
     try:
         DB.session.add(enterprise)
         DB.session.commit()
