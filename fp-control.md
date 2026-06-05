@@ -180,32 +180,41 @@ If yes, produce a single `.html` file with no external dependencies (all CSS and
 
 ### Structure
 
-1. **Header** — system name, date, total UFP badge
-2. **System boundary** — one paragraph
-3. **FP breakdown chart** — horizontal stacked bar built with inline SVG showing ILF / EIF / EI / EO / EIQ proportions, colored by type
-4. **UFP summary table** — type, item count, FP total per type, grand total row
-5. **Detailed sections** — one collapsible `<details>` block per function type (ILF, EIF, EI, EO, EIQ), each containing the full item table with columns: name, complexity, FP
-6. **Effort estimate table** — optimistic / typical / conservative rows (include even if skipped in Step 5, using default benchmarks)
-7. **Assumptions and risks** — numbered list
-8. **Print button** — fixed top-right corner, hidden on print
+1. **Header** — system name, date, total UFP badge. Fixed button group (top-right) with three buttons: **Dark/Light toggle** (switches theme; starts as "🌙 Dark"), **Print** (full print), **Summary** (simplified print — overview tab only)
+2. **CSS-only tab navigation** using the radio-button pattern — no JavaScript. Tabs: Overview · ILF · EIF · EI · EO · EIQ · Effort & Risks. Each function-type tab label shows its FP subtotal as a small chip (e.g. "ILF · 91").
+3. **Overview tab** — system boundary paragraph + inline SVG stacked bar chart + UFP summary table (type, items, FP total, grand total row)
+4. **One tab per function type** (ILF, EIF, EI, EO, EIQ), each containing:
+   - A **complexity reference card** showing the matrix for that type (RET/DET for data functions; FTR/DET for transaction functions) with the weight for each level
+   - A **full item table** with columns:
+     - Data functions (ILF / EIF): Name · RET · DET · Rule applied · Complexity · FP
+     - Transaction functions (EI / EO / EIQ): Name · FTR · DET · Rule applied · Complexity · FP
+   - The **Rule applied** column shows the exact matrix cell used, e.g. `RET 2–5, DET 1–19 → Low` or `FTR 2, DET 5–15 → Avg`
+   - Subtotal row at the bottom
+5. **Effort & Risks tab** — effort estimate table (optimistic / typical / conservative, always included using default benchmarks) + assumptions and risks list
 
 ### Interactivity rules
 
-- `<details>` / `<summary>` for collapsible sections — no JavaScript needed
-- Print button triggers `window.print()` via an inline `onclick`
-- All other behavior must work without JavaScript
+- CSS-only tabs using hidden radio inputs (`position:absolute; opacity:0; pointer-events:none`) and the `~` sibling combinator — radio inputs must be the first children of the tabs container, followed by the tab bar and panels
+- **Dark/Light toggle**: JavaScript `toggleTheme()` adds/removes a `dark` class on `<body>` and updates the button label accordingly
+- **Print button** triggers `window.print()` directly
+- **Summary print button** triggers `printSimple()`: adds class `print-simple` to `<body>`, calls `window.print()`, then removes the class via the `afterprint` event
 
 ### Print rules (`@media print`)
 
-- Hide the print button
-- Force all `<details>` open (`details { display: block } summary { display: none }`)
-- Remove shadows, backgrounds, and border-radius from cards
-- Ensure tables paginate cleanly (`page-break-inside: avoid` on rows)
-- SVG chart must render correctly on paper — use black strokes, patterns or labels instead of color-only encoding
+- Hide the button group and tab bar
+- Force all panels visible (`display: block !important`) — except when `body.print-simple` is set, which shows only the Overview panel
+- Each panel starts on a new page (`page-break-before: always` on `.panel + .panel`)
+- Remove shadows and border-radius
+- Ensure tables paginate cleanly (`break-inside: avoid` on rows)
+- SVG chart must render correctly on paper — use dark fills or patterns instead of color-only encoding
+- **Always print in light mode**: reset all CSS custom properties to light values inside `@media print { :root, body.dark { ... } }` — dark mode must never appear in print output
 
 ### Style guidelines
 
-- Clean, professional appearance — white background, dark text, accent color for headers and totals
+- Implement theming with CSS custom properties (`:root` for light defaults, `body.dark` overrides for dark mode)
+- Light mode: white background, dark text, indigo accent (#4F46E5)
+- Dark mode: near-black background (#0f0f1a), light text, lighter indigo (#818CF8) for accents; badge colors inverted for legibility
+- Tab bar scrollable horizontally on small screens (`overflow-x: auto; scrollbar-width: none`)
 - Fully responsive layout
 - Self-contained — no `<link>` to external stylesheets, no `<script src="">` to CDNs
 
