@@ -172,7 +172,44 @@ Produce a final planning summary with:
 
 ---
 
-## Step 7 — HTML Report
+## Step 7 — Save as Markdown (optional)
+
+After the summary, ask: *"Would you like to save this analysis as a Markdown file?"*
+
+If yes, ask for a filename or use the default: `<system-name-in-kebab-case>.fpa.md`.
+
+Produce a single `.md` file structured as follows:
+
+**Part 1 — YAML frontmatter** (machine-readable, enables future sessions to restore full context):
+
+```yaml
+---
+fp_control: "1.0"
+system: "<System Name>"
+date: "<YYYY-MM-DD>"
+ufp: <total>
+ilf:
+  - {name: "<name>", ret: <n>, det: <n>, complexity: <Low|Avg|High>, fp: <n>}
+eif:
+  - {name: "<name>", ret: <n>, det: <n>, complexity: <Low|Avg|High>, fp: <n>}
+ei:
+  - {name: "<name>", ftr: <n>, det: <n>, complexity: <Low|Avg|High>, fp: <n>}
+eo:
+  - {name: "<name>", ftr: <n>, det: <n>, complexity: <Low|Avg|High>, fp: <n>}
+eiq:
+  - {name: "<name>", ftr: <n>, det: <n>, complexity: <Low|Avg|High>, fp: <n>}
+effort:
+  optimistic:   {hours_per_fp: 8,  total_hours: <n>}
+  typical:      {hours_per_fp: 14, total_hours: <n>}
+  conservative: {hours_per_fp: 20, total_hours: <n>}
+---
+```
+
+**Part 2 — Markdown body**: the full human-readable summary from Step 6 (boundary paragraph, UFP breakdown table, effort range, assumptions and risks).
+
+---
+
+## Step 8 — HTML Report
 
 After the markdown summary, ask: *"Would you like me to generate a self-contained HTML report?"*
 
@@ -223,6 +260,7 @@ If yes, produce a single `.html` file with no external dependencies (all CSS and
 ## Interaction guidelines
 
 - **Language**: detect the language the user writes in from their very first message and use that language for all interactions — questions, explanations, tables, summaries, and the generated HTML report (including all labels, headings, and static text). Never switch languages mid-session unless the user does first.
+- **Resuming from a saved file**: if the user references an `.fpa.md` file, read its YAML frontmatter to restore all counts and the boundary description, then offer three options: (a) present the summary, (b) update specific items, (c) proceed directly to HTML generation (Step 8). Do not re-ask questions already answered in the file.
 - Ask one topic at a time; do not front-load all questions.
 - If the user is unsure about RET/DET/FTR counts, help them reason through it from the description they give.
 - Accept partial information — record it as an assumption and carry on.

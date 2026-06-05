@@ -2,7 +2,7 @@
 
 A vendor-agnostic AI skill for planning software systems using **Function Point Analysis (IFPUG)**.
 
-The skill guides an AI agent through the full FPA process: defining the system boundary, identifying data and transaction functions, assigning complexity, calculating Unadjusted Function Points, producing an effort estimate, and generating a self-contained HTML report — all in the language the user speaks.
+The skill guides an AI agent through the full FPA process: defining the system boundary, identifying data and transaction functions, assigning complexity, calculating Unadjusted Function Points, producing an effort estimate, saving the analysis as a structured Markdown file for future sessions, and generating a self-contained HTML report — all in the language the user speaks.
 
 ## Why Function Points still matter in an AI world
 
@@ -58,7 +58,8 @@ Paste the contents of `fp-control.md` as a system prompt, or load it as a custom
 | 4 | Calculate Unadjusted Function Points (UFP) |
 | 5 | Estimate effort (optional) |
 | 6 | Produce planning summary |
-| 7 | Generate a self-contained HTML report (interactive + print-ready) |
+| 7 | Save as `.fpa.md` — YAML frontmatter + human-readable summary for future sessions |
+| 8 | Generate a self-contained HTML report (interactive + print-ready) |
 
 The entire session — questions, tables, summary, and HTML output — is conducted in the language the user writes in.
 
