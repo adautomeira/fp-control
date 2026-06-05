@@ -63,6 +63,10 @@ Paste the contents of `fp-control.md` as a system prompt, or load it as a custom
 
 The entire session — questions, tables, summary, and HTML output — is conducted in the language the user writes in.
 
+## License
+
+MIT — free to use, copy, modify, and distribute. If you fork or derive a project from this work, include a visible reference to the [original repository](https://github.com/adautomeira/fp-control) in your README or documentation.
+
 ## Reference
 
 IFPUG Counting Practices Manual (CPM) — [ifpug.org](https://www.ifpug.org)
