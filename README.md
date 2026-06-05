@@ -31,22 +31,14 @@ The skill installs itself the first time any agent reads `fp-control.md`. It det
 
 ## Manual installation
 
-### Claude Code
+The agent handles this automatically on first read. If you prefer to install it yourself — or your platform sandboxes file writes — copy `fp-control.md` to the appropriate location below:
 
-```bash
-mkdir -p ~/.claude/commands
-cp fp-control.md ~/.claude/commands/fp-control.md
-```
-
-Invoke inside a session:
-
-```
-/fp-control
-```
-
-### Any other LLM / agent platform
-
-Paste the contents of `fp-control.md` as a system prompt, or load it as a custom skill/tool per your platform's documentation. No external dependencies required.
+| Platform | Command |
+|----------|---------|
+| Claude Code | `mkdir -p ~/.claude/commands && cp fp-control.md ~/.claude/commands/fp-control.md` |
+| Cursor | `mkdir -p ~/.cursor/rules && cp fp-control.md ~/.cursor/rules/fp-control.mdc` |
+| Windsurf | `mkdir -p ~/.codeium/windsurf/memories && cp fp-control.md ~/.codeium/windsurf/memories/fp-control.md` |
+| Any other agent | Paste the contents as a system prompt or load it as a custom skill per your platform's documentation |
 
 ## What the skill covers
 
