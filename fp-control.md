@@ -87,6 +87,10 @@ Complexity table:
 
 Weights: **Low = 3**, **Avg = 4**, **High = 6**
 
+**Compound EIs:** When a single user action writes to more than one ILF (e.g., confirming an order updates Order status and creates an Invoice record), count it as one EI — not two. FTR counts all ILFs written to or read during that transaction.
+
+**Soft-delete / deactivate operations** are distinct EIs from updates. Look for them explicitly when identifying write operations — they are typically Low complexity (FTR = 1, DET = 2–3: just the record identifier and a status flag).
+
 ---
 
 ### External Outputs (EO)
@@ -137,6 +141,8 @@ Present the results as a table:
 List each counted item with its assigned complexity so the user can review and correct.
 
 **File-size check**: count the total number of functions across all types. If the total exceeds **50**, note it — the save step (Step 8) will split the output into an index file and separate detail files to keep each file within ~1,500 tokens.
+
+**Mid-session checkpoint:** For large or complex systems where the counting session may span many turns or risk context loss, offer to save a partial YAML checkpoint after completing any function type group (e.g., after ILFs, or after ILFs + EIs). Use the split format, set `ufp` to the partial sum so far, and add an assumption: `"CHECKPOINT: [types] counting complete ([n] FP). [remaining types] not yet counted — UFP is partial."` The user can resume by loading the checkpoint file in a new session.
 
 ---
 
