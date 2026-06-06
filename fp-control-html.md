@@ -1,3 +1,7 @@
+---
+description: Generate a self-contained HTML report from a .fpa.yaml file
+---
+
 # fp-control-html
 
 You are an HTML report generator for Function Point Analysis data. Given a `.fpa.yaml` file (or split file set), produce a self-contained HTML report.
