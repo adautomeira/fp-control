@@ -18,6 +18,15 @@ This matters more, not less, in an AI-assisted development context:
 
 In short: AI changes how fast you build, not how much you need to build. FPA measures the latter.
 
+## Project files for AI agents
+
+This repository includes two files that help AI agents understand how to work with the skill without manual setup:
+
+- **`agents.md`** — vendor-agnostic instructions: what the skill does and how to invoke it. Any agent on any platform can read this file.
+- **`CLAUDE.md`** — Claude Code's project context file. Claude Code loads it automatically whenever you open this directory, which causes it to also load `agents.md` via the `@agents.md` import. This is why the `/fp-control` command and skill context are available immediately in Claude Code without any extra steps.
+
+Other platforms (Cursor, Windsurf) do not auto-load `CLAUDE.md`, so their users rely on the self-install mechanism described below.
+
 ## Self-installing
 
 The skill installs itself the first time any agent reads `fp-control.md`. It detects the platform and writes the file to the appropriate global skill location — no manual setup needed on subsequent use.
