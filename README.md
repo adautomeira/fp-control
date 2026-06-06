@@ -1,8 +1,6 @@
 # fp-control
 
-A vendor-agnostic AI skill for planning software systems using **Function Point Analysis (IFPUG)**.
-
-The skill guides an AI agent through the full FPA process: defining the system boundary, identifying data and transaction functions, assigning complexity, calculating Unadjusted Function Points, producing an effort estimate, saving the analysis as a structured Markdown file for future sessions, and generating a self-contained HTML report — all in the language the user speaks.
+Two vendor-agnostic AI skills for planning software systems using **Function Point Analysis (IFPUG)**: one that runs the full FPA session and saves results to a structured YAML file, and one that reads that file and generates a self-contained HTML report.
 
 ## Why Function Points still matter in an AI world
 
@@ -29,27 +27,29 @@ Other platforms (Cursor, Windsurf) do not auto-load `CLAUDE.md`, so their users 
 
 ## Self-installing
 
-The skill installs itself the first time any agent reads `fp-control.md`. It detects the platform and writes the file to the appropriate global skill location — no manual setup needed on subsequent use.
+Both skills install themselves the first time any agent reads `agents.md`. It detects the platform and writes both files to the appropriate global skill locations — no manual setup needed on subsequent use.
 
 | Platform | Installed to |
 |----------|-------------|
-| Claude Code | `~/.claude/commands/fp-control.md` |
-| Cursor | `~/.cursor/rules/fp-control.mdc` |
-| Windsurf | `~/.codeium/windsurf/memories/fp-control.md` |
+| Claude Code | `~/.claude/commands/fp-control.md` and `~/.claude/commands/fp-control-html.md` |
+| Cursor | `~/.cursor/rules/fp-control.mdc` and `~/.cursor/rules/fp-control-html.mdc` |
+| Windsurf | `~/.codeium/windsurf/memories/fp-control.md` and `~/.codeium/windsurf/memories/fp-control-html.md` |
 | Any other agent | Platform's global instructions or memories directory |
 
 ## Manual installation
 
-The agent handles this automatically on first read. If you prefer to install it yourself — or your platform sandboxes file writes — copy `fp-control.md` to the appropriate location below:
+If you prefer to install manually — or your platform sandboxes file writes:
 
-| Platform | Command |
+| Platform | Commands |
 |----------|---------|
-| Claude Code | `mkdir -p ~/.claude/commands && cp fp-control.md ~/.claude/commands/fp-control.md` |
-| Cursor | `mkdir -p ~/.cursor/rules && cp fp-control.md ~/.cursor/rules/fp-control.mdc` |
-| Windsurf | `mkdir -p ~/.codeium/windsurf/memories && cp fp-control.md ~/.codeium/windsurf/memories/fp-control.md` |
-| Any other agent | Paste the contents as a system prompt or load it as a custom skill per your platform's documentation |
+| Claude Code | `mkdir -p ~/.claude/commands && cp fp-control.md ~/.claude/commands/fp-control.md && cp fp-control-html.md ~/.claude/commands/fp-control-html.md` |
+| Cursor | `mkdir -p ~/.cursor/rules && cp fp-control.md ~/.cursor/rules/fp-control.mdc && cp fp-control-html.md ~/.cursor/rules/fp-control-html.mdc` |
+| Windsurf | `mkdir -p ~/.codeium/windsurf/memories && cp fp-control.md ~/.codeium/windsurf/memories/fp-control.md && cp fp-control-html.md ~/.codeium/windsurf/memories/fp-control-html.md` |
+| Any other agent | Paste each file's contents as a system prompt or custom skill |
 
-## What the skill covers
+## What the skills cover
+
+**`/fp-control`** — FPA session (Development and Enhancement Project modes):
 
 | Step | Description |
 |------|-------------|
@@ -57,12 +57,18 @@ The agent handles this automatically on first read. If you prefer to install it 
 | 2 | Count data functions — ILF and EIF |
 | 3 | Count transaction functions — EI, EO, EIQ |
 | 4 | Calculate Unadjusted Function Points (UFP) |
-| 5 | Estimate effort (optional) |
-| 6 | Produce planning summary |
-| 7 | Save as `.fpa.md` — YAML frontmatter + human-readable summary for future sessions |
-| 8 | Generate a self-contained HTML report (interactive + print-ready) |
+| 5 | Rate 14 General System Characteristics and calculate Adjusted Function Points (AFP) (optional) |
+| 6 | Estimate effort — UFP and AFP based (optional) |
+| 7 | Produce planning summary |
+| 8 | Save as `.fpa.yaml` — compact YAML for future sessions, enhancement baseline loading, and HTML generation |
 
-The entire session — questions, tables, summary, and HTML output — is conducted in the language the user writes in.
+Enhancement Project mode (triggered by referencing an existing `.fpa.yaml`): classify existing functions as ADD / CHG / DEL, compute DEFP and Updated UFP, optionally recalculate AFP, save as a new `.fpa.yaml`.
+
+**`/fp-control-html`** — HTML report generator:
+
+Reads any `.fpa.yaml` (development or enhancement, single-file or split) and produces a self-contained `.html` report with tabbed navigation, SVG charts, dark/light mode, and print support. The HTML filename matches the YAML filename with `.fpa.yaml` replaced by `.html`.
+
+The entire session is conducted in the language the user writes in. The HTML report is generated in the same language.
 
 ## License
 
