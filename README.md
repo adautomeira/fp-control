@@ -59,14 +59,14 @@ If you prefer to install manually — or your platform sandboxes file writes:
 | 4 | Calculate Unadjusted Function Points (UFP) |
 | 5 | Rate 14 General System Characteristics and calculate Adjusted Function Points (AFP) (optional) |
 | 6 | Estimate effort — UFP and AFP based (optional) |
-| 7 | Produce planning summary |
+| 7 | Produce planning summary — including scope tracking: deferred items (future phase), rejected items (explicitly excluded), and dated negotiation notes |
 | 8 | Save as `.fpa.yaml` — compact YAML for future sessions, enhancement baseline loading, and HTML generation |
 
 Enhancement Project mode (triggered by referencing an existing `.fpa.yaml`): classify existing functions as ADD / CHG / DEL, compute DEFP and Updated UFP, optionally recalculate AFP, save as a new `.fpa.yaml`.
 
 **`/fp-control-html`** — HTML report generator:
 
-Reads any `.fpa.yaml` (development or enhancement, single-file or split) and produces a self-contained `.html` report with tabbed navigation, SVG charts, dark/light mode, and print support. The HTML filename matches the YAML filename with `.fpa.yaml` replaced by `.html`.
+Reads any `.fpa.yaml` (development or enhancement, single-file or split) and produces a self-contained `.html` report with tabbed navigation, SVG charts, dark/light mode, and print support. Includes a **Scope tab** (when present) that surfaces deferred items, rejected scope, and stakeholder notes. The HTML filename matches the YAML filename with `.fpa.yaml` replaced by `.html`.
 
 The entire session is conducted in the language the user writes in. The HTML report is generated in the same language.
 
