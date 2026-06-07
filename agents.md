@@ -43,7 +43,8 @@ This repository provides two skills:
 4. Calculate Unadjusted Function Points (UFP)
 5. Rate the 14 General System Characteristics and calculate Adjusted Function Points (AFP) (optional)
 6. Produce an effort estimate (optional)
-7. Save the analysis as a `.fpa.yaml` file
+7. Produce a planning summary — including scope tracking: deferred items, rejected items, and dated negotiation notes
+8. Save the analysis as a `.fpa.yaml` file
 
 *Enhancement Project* — measuring changes to a deployed system:
 1. Load a baseline `.fpa.yaml` (or a known baseline UFP)
@@ -54,4 +55,4 @@ This repository provides two skills:
 6. Produce an effort estimate based on DEFP (optional)
 7. Save as a new `.fpa.yaml` with `project_type: enhancement`
 
-**`fp-control-html`** — reads any `.fpa.yaml` (development or enhancement, single-file or split) and generates a self-contained HTML report with tabs, charts, dark/light mode, and print support.
+**`fp-control-html`** — reads any `.fpa.yaml` (development or enhancement, single-file or split) and generates a self-contained HTML report with tabs, charts, dark/light mode, print support, and a **Scope tab** (when present) surfacing deferred items, rejected scope, and stakeholder notes.
