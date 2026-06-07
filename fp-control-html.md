@@ -32,6 +32,18 @@ Detect the language to use for all report labels, headings, and static text from
 
 ---
 
+## Confirm style preferences
+
+Before generating the report, briefly show the user the default look and ask if they'd like to change anything:
+
+- **Layout**: centered "printed document" card — soft gray page, ~960px container, gradient indigo header banner, compact UFP badge (see Style rules below)
+- **Accent color**: indigo (`#4F46E5` light / `#818CF8` dark)
+- **Starting theme**: light mode (the report includes a Dark/Light toggle either way)
+
+If the user has no preference or doesn't respond, proceed with these defaults. If they request a change (e.g. a different accent color, a flatter layout, dark mode by default), apply it consistently across the header, badges, charts, tabs, and complexity indicators.
+
+---
+
 ## Generation strategy
 
 For large reports — matching the same >50-function threshold used for split YAML files — build the HTML incrementally instead of in a single `Write`:
