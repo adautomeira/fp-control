@@ -37,15 +37,15 @@ Detect the language to use for all report labels, headings, and static text from
 ### Structure
 
 1. **Header** — system name, date, UFP badge. If AFP was calculated (`afp` key present), show a second AFP badge alongside it (e.g. "UFP 142 · AFP 156"). Fixed button group (top-right) with three buttons: **Dark/Light toggle** (switches theme; starts as "🌙 Dark"), **Print** (full print), **Summary** (simplified print — overview tab only)
-2. **CSS-only tab navigation** using the radio-button pattern — no JavaScript. Tabs: Overview · ILF · EIF · EI · EO · EIQ · AFP (only if `afp` key present) · Effort & Risks · Scope (only if any of `deferred`, `rejected`, or `notes` is present and non-empty). Each function-type tab label shows its FP subtotal as a small chip (e.g. "ILF · 91"). The Scope tab chip shows the total item count across all three fields (e.g. "Scope · 9").
-3. **Overview tab** — system boundary paragraph + inline SVG stacked bar chart + UFP summary table (type, items, FP total, grand total row). If AFP was calculated, append a one-row AFP summary below the UFP table: ID · VAF · AFP.
-4. **One tab per function type** (ILF, EIF, EI, EO, EIQ), each containing:
+2. **CSS-only tab navigation** using the radio-button pattern — no JavaScript. Tabs: Overview · ILF · EIF · EI · EO · EIQ · AFP (only if `afp` key present) · Effort & Risks · Scope (only if any of `deferred`, `rejected`, or `notes` is present and non-empty). **Omit any function-type tab — and its panel entirely — when that type has zero items** (e.g. no EIF tab, no EIF radio input, no EIF panel when EIF count is 0; same rule applies to any type). Each function-type tab label shows its FP subtotal as a small chip (e.g. "ILF · 91"). The Scope tab chip shows the total item count across all three fields (e.g. "Scope · 9").
+3. **Overview tab** — system boundary paragraph + inline SVG stacked bar chart + UFP summary table with columns: Type · Items · FP Total · % of UFP (grand total row shows 100%). Omit zero-item types from the stacked bar chart and from the table body (still show the grand total row). If AFP was calculated, append a one-row AFP summary below the UFP table: ID · VAF · AFP.
+4. **One tab per function type** (ILF, EIF, EI, EO, EIQ — only those with items > 0), each containing:
    - A **complexity reference card** showing the IFPUG matrix for that type (RET/DET for data functions; FTR/DET for transaction functions) with the weight for each complexity level
    - A **full item table** with columns:
      - Data functions (ILF / EIF): Name · RET · DET · Rule applied · Complexity · FP
      - Transaction functions (EI / EO / EIQ): Name · FTR · DET · Rule applied · Complexity · FP
    - The **Rule applied** column shows the exact matrix cell used, e.g. `RET 2–5, DET 1–19 → Low` or `FTR 2, DET 5–15 → Avg`
-   - Subtotal row at the bottom
+   - Subtotal row at the bottom showing total FP and a complexity breakdown, e.g. `Low×11 · Avg×13 · High×0`
 5. **AFP tab** (only render if `afp` key present) — two sections:
    - **GSC scoring table**: columns # · General System Characteristic · Score · Bar (a small inline visual bar, e.g. filled squares, proportional to the 0–5 score)
    - **VAF calculation card**: shows UFP, ID, VAF formula (`0.65 + ID × 0.01 = VAF`), and AFP result prominently
