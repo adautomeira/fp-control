@@ -231,8 +231,11 @@ Produce a final planning summary with:
 4. **AFP, VAF, and GSC scores** — from Step 5, if completed
 5. **Effort range** — from Step 6, if requested
 6. **Key assumptions and risks** — items the user should revisit as requirements firm up
+7. **Deferred items** — features or scope elements agreed to handle in a future phase
+8. **Rejected items** — features explicitly excluded, with the rationale noted in the string
+9. **Notes** — dated entries capturing stakeholder decisions, open questions, or negotiation outcomes
 
-Collect the final list of assumptions and risks explicitly before saving — they will be stored in the `assumptions` field of the YAML and displayed in the HTML report's Effort & Risks tab.
+Collect assumptions, deferred, rejected, and notes explicitly before saving. When the user mentions something was agreed out of scope, ask whether it is `rejected` (definitely not this version) or `deferred` (later, not now). Anything discussed but unresolved can go into `notes` with the current date. All four fields are optional — omit any that are empty.
 
 ---
 
@@ -294,6 +297,12 @@ effort:
   conservative: {hours_per_fp: 20, total_hours: <n>}
 assumptions:                          # omit if none — one string per item
   - "<assumption or risk>"
+deferred:                             # omit if none — features deferred to a future phase
+  - "<description>"
+rejected:                             # omit if none — features explicitly excluded from scope
+  - "<description>"
+notes:                                # omit if none — stakeholder / negotiation log
+  - {date: "<YYYY-MM-DD>", text: "<note>"}
 ---
 ```
 
@@ -356,6 +365,12 @@ effort:
   conservative: {hours_per_fp: 20, total_hours: <n>}
 assumptions:                          # omit if none — one string per item
   - "<assumption or risk>"
+deferred:                             # omit if none — features deferred to a future phase
+  - "<description>"
+rejected:                             # omit if none — features explicitly excluded from scope
+  - "<description>"
+notes:                                # omit if none — stakeholder / negotiation log
+  - {date: "<YYYY-MM-DD>", text: "<note>"}
 ---
 ```
 
@@ -586,6 +601,12 @@ effort:
   conservative: {hours_per_fp: 20, total_hours: <defp * 20>}
 assumptions:                          # omit if none — one string per item
   - "<assumption or risk>"
+deferred:                             # omit if none — features deferred to a future phase
+  - "<description>"
+rejected:                             # omit if none — features explicitly excluded from scope
+  - "<description>"
+notes:                                # omit if none — stakeholder / negotiation log
+  - {date: "<YYYY-MM-DD>", text: "<note>"}
 ---
 ```
 
@@ -594,7 +615,7 @@ assumptions:                          # omit if none — one string per item
 ## Interaction guidelines
 
 - **Language**: detect the language the user writes in from their very first message and use that language for all interactions — questions, explanations, tables, and summaries. Never switch languages mid-session unless the user does first.
-- **Resuming from a saved file**: `.fpa.yaml` files are YAML-only — read the index file first. If `split: true`, load detail files on demand (only when their content is needed for editing a specific type). Do not load all detail files upfront. Restore all counts, GSC scores, and the boundary description, then offer three options: (a) present the summary, (b) update specific items, (c) measure changes to the deployed system — Enhancement Project Mode (Steps E1–E9). To generate or regenerate the HTML report, tell the user to use `/fp-control-html`. Do not re-ask questions already answered in the file. If the file has no `afp` key, treat AFP as skipped. If `project_type: enhancement`, load the enhancement context (DEFP, updated UFP, ADD/CHG/DEL breakdown) instead of the development context.
+- **Resuming from a saved file**: `.fpa.yaml` files are YAML-only — read the index file first. If `split: true`, load detail files on demand (only when their content is needed for editing a specific type). Do not load all detail files upfront. Restore all counts, GSC scores, and the boundary description, then offer three options: (a) present the summary, (b) update specific items, (c) measure changes to the deployed system — Enhancement Project Mode (Steps E1–E9). To generate or regenerate the HTML report, tell the user to use `/fp-control-html`. Do not re-ask questions already answered in the file. If the file has no `afp` key, treat AFP as skipped. If `project_type: enhancement`, load the enhancement context (DEFP, updated UFP, ADD/CHG/DEL breakdown) instead of the development context. If the file has `deferred`, `rejected`, or `notes` keys, display them in the summary and allow the user to add, edit, or remove entries.
 - Ask one topic at a time; do not front-load all questions.
 - If the user is unsure about RET/DET/FTR counts, help them reason through it from the description they give.
 - Accept partial information — record it as an assumption and carry on.

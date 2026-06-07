@@ -37,7 +37,7 @@ Detect the language to use for all report labels, headings, and static text from
 ### Structure
 
 1. **Header** — system name, date, UFP badge. If AFP was calculated (`afp` key present), show a second AFP badge alongside it (e.g. "UFP 142 · AFP 156"). Fixed button group (top-right) with three buttons: **Dark/Light toggle** (switches theme; starts as "🌙 Dark"), **Print** (full print), **Summary** (simplified print — overview tab only)
-2. **CSS-only tab navigation** using the radio-button pattern — no JavaScript. Tabs: Overview · ILF · EIF · EI · EO · EIQ · AFP (only if `afp` key present) · Effort & Risks. Each function-type tab label shows its FP subtotal as a small chip (e.g. "ILF · 91").
+2. **CSS-only tab navigation** using the radio-button pattern — no JavaScript. Tabs: Overview · ILF · EIF · EI · EO · EIQ · AFP (only if `afp` key present) · Effort & Risks · Scope (only if any of `deferred`, `rejected`, or `notes` is present and non-empty). Each function-type tab label shows its FP subtotal as a small chip (e.g. "ILF · 91"). The Scope tab chip shows the total item count across all three fields (e.g. "Scope · 9").
 3. **Overview tab** — system boundary paragraph + inline SVG stacked bar chart + UFP summary table (type, items, FP total, grand total row). If AFP was calculated, append a one-row AFP summary below the UFP table: ID · VAF · AFP.
 4. **One tab per function type** (ILF, EIF, EI, EO, EIQ), each containing:
    - A **complexity reference card** showing the IFPUG matrix for that type (RET/DET for data functions; FTR/DET for transaction functions) with the weight for each complexity level
@@ -50,6 +50,10 @@ Detect the language to use for all report labels, headings, and static text from
    - **GSC scoring table**: columns # · General System Characteristic · Score · Bar (a small inline visual bar, e.g. filled squares, proportional to the 0–5 score)
    - **VAF calculation card**: shows UFP, ID, VAF formula (`0.65 + ID × 0.01 = VAF`), and AFP result prominently
 6. **Effort & Risks tab** — effort estimate table (optimistic / typical / conservative); if AFP was calculated, show a second effort block using AFP as the base alongside the UFP block. If the `assumptions` key is present in the YAML and non-empty, render the list below the effort table. Omit the section entirely if the key is absent.
+7. **Scope tab** (only render if at least one of `deferred`, `rejected`, or `notes` is present and non-empty) — three optional sections, each omitted when the corresponding key is absent:
+   - **Deferred** — labeled section with a bullet list of `deferred` items. Use a distinct visual treatment (e.g. amber/yellow accent or clock icon) to convey "pending future scope."
+   - **Rejected** — labeled section with a bullet list of `rejected` items. Use a muted or strikethrough-adjacent treatment (e.g. red/gray accent or × icon) to convey "out of scope."
+   - **Notes** — labeled section rendered as a two-column table (Date · Note), sorted newest-first. Each entry is `{date, text}`; if an entry is a plain string (no `date` key), render it without a date. Use a neutral accent (e.g. indigo or blue).
 
 ---
 
@@ -59,7 +63,7 @@ Detect the language to use for all report labels, headings, and static text from
 
 **Header** — system name, date, DEFP badge ("DEFP 38"), Updated UFP badge ("Updated UFP 180"). AFP badge if `afp` key present.
 
-**Tabs**: Overview · Added · Changed · Deleted · AFP (only if `afp` key present) · Effort & Risks
+**Tabs**: Overview · Added · Changed · Deleted · AFP (only if `afp` key present) · Effort & Risks · Scope (only if any of `deferred`, `rejected`, or `notes` is present and non-empty; same structure and rules as the Development Report Scope tab)
 
 **Overview tab**
 - Enhancement scope paragraph (from `boundary`)
@@ -75,6 +79,8 @@ Detect the language to use for all report labels, headings, and static text from
 **AFP tab** (only if `afp` key present) — same structure as the Development Report AFP tab, using the updated GSC scores and Updated UFP as the base
 
 **Effort & Risks tab** — effort table using DEFP as the base. If the `assumptions` key is present in the YAML and non-empty, render the list below the effort table. Omit the section entirely if the key is absent.
+
+**Scope tab** — same structure and rendering rules as the Development Report Scope tab.
 
 ---
 
