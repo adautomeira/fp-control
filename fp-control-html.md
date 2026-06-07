@@ -32,6 +32,18 @@ Detect the language to use for all report labels, headings, and static text from
 
 ---
 
+## Generation strategy
+
+For large reports — matching the same >50-function threshold used for split YAML files — build the HTML incrementally instead of in a single `Write`:
+
+1. `Write` the shell first: `<head>` (CSS), opening `<body>`, button group, tab navigation (radio inputs + tab bar), Overview tab, AFP tab (if present), Effort & Risks tab, Scope tab (if present), and the `<script>` block — but leave `</body></html>` for the final step.
+2. Append each function-type panel in turn with `cat >> <output>.html << 'EOF' ... EOF` (single-quoted heredoc delimiter — this prevents the shell from expanding `$`, backticks, or other characters that appear in inline CSS/JS).
+3. On the final append, close with `</body></html>`.
+
+This mirrors the order detail files are loaded (one function type at a time) and keeps each write within a manageable size.
+
+---
+
 ## Development Report
 
 ### Structure
@@ -105,9 +117,15 @@ Detect the language to use for all report labels, headings, and static text from
 
 ### Style
 
+The report should read like a **printed document**, not a dashboard or web app — a centered card floating on a soft background, not a full-width dense layout.
+
+- **Layout**: center the content in a `.container` (max-width ~960px) on a soft neutral page background (e.g. `#f5f7fa` light / `#0f0f1a` dark). The side margins are intentional — they create contrast between the "page" and the "document" sitting on it.
+- **Header**: a banner with a gradient background (e.g. `linear-gradient(135deg, #4F46E5, #7C3AED)`), white text, rounded corners (~16px). Show the system name as the title, a one-line subtitle (report type + date), and a UFP badge below it. Keep the badge **compact** — small font size and modest pill padding (e.g. `0.25rem 0.85rem`); it should read as a small label, not an oversized button.
+- **Tabs + panels**: wrap the tab bar and all panels together in a single rounded card (white/dark surface, subtle shadow, `border-radius: 12px`, `overflow: hidden`) that sits inside the container — a panel floating on the page, not tabs sitting bare in the page flow.
+- **Spacing**: generous internal padding and a comfortable base font size (~15px body text, ~1.75rem panel padding) — this is a document meant to be read, not a dense data table to scan.
 - Implement theming with CSS custom properties (`:root` for light defaults, `body.dark` overrides for dark mode)
-- Light mode: white background, dark text, indigo accent (#4F46E5)
-- Dark mode: near-black background (#0f0f1a), light text, lighter indigo (#818CF8) for accents; badge colors inverted for legibility
+- Light mode: soft gray page background, white card surfaces, dark text, indigo accent (#4F46E5)
+- Dark mode: near-black background (#0f0f1a), dark surfaces, light text, lighter indigo (#818CF8) for accents; badge colors inverted for legibility
 - Tab bar scrollable horizontally on small screens (`overflow-x: auto; scrollbar-width: none`)
 - Fully responsive layout
 - Self-contained — no `<link>` to external stylesheets, no `<script src="">` to CDNs
