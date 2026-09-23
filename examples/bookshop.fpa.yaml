@@ -1,0 +1,58 @@
+---
+fp_control: "1.2"
+system: "Bookshop"
+date: "2026-09-01"
+boundary: "Online bookshop: catalog, customers and orders are maintained inside the system; exchange rates come from an external payment gateway."
+ufp: 64
+ilf:
+  - {id: ilf-01, name: "Book",     ret: 1, det: 8,  complexity: Low, fp: 7}
+  - {id: ilf-02, name: "Customer", ret: 1, det: 6,  complexity: Low, fp: 7}
+  - {id: ilf-03, name: "Order",    ret: 2, det: 12, complexity: Low, fp: 7}
+eif:
+  - {id: eif-01, name: "Payment Gateway Rates", ret: 1, det: 4, complexity: Low, fp: 5}
+ei:
+  - {id: ei-01, name: "Create Book",       ftr: 1, det: 8,  complexity: Low,  fp: 3}
+  - {id: ei-02, name: "Update Book",       ftr: 1, det: 8,  complexity: Low,  fp: 3}
+  - {id: ei-03, name: "Deactivate Book",   ftr: 1, det: 2,  complexity: Low,  fp: 3}
+  - {id: ei-04, name: "Register Customer", ftr: 1, det: 6,  complexity: Low,  fp: 3}
+  - {id: ei-05, name: "Place Order",       ftr: 3, det: 10, complexity: High, fp: 6}
+eo:
+  - {id: eo-01, name: "Monthly Sales Report",     ftr: 2, det: 8,  complexity: Avg, fp: 5}
+  - {id: eo-02, name: "Order Confirmation Email", ftr: 3, det: 12, complexity: Avg, fp: 5}
+eiq:
+  - {id: eiq-01, name: "Search Books",  ftr: 1, det: 6,  complexity: Low, fp: 3}
+  - {id: eiq-02, name: "View Order",    ftr: 2, det: 12, complexity: Avg, fp: 4}
+  - {id: eiq-03, name: "View Customer", ftr: 1, det: 6,  complexity: Low, fp: 3}
+afp:
+  gsc:
+    - {id: 1,  name: "Data Communications",          score: 3}
+    - {id: 2,  name: "Distributed Data Processing",  score: 2}
+    - {id: 3,  name: "Performance",                  score: 3}
+    - {id: 4,  name: "Heavily Used Configuration",   score: 2}
+    - {id: 5,  name: "Transaction Rate",             score: 3}
+    - {id: 6,  name: "Online Data Entry",            score: 4}
+    - {id: 7,  name: "End-User Efficiency",          score: 4}
+    - {id: 8,  name: "Online Update",                score: 3}
+    - {id: 9,  name: "Complex Processing",           score: 2}
+    - {id: 10, name: "Reusability",                  score: 1}
+    - {id: 11, name: "Installation Ease",            score: 2}
+    - {id: 12, name: "Operational Ease",             score: 3}
+    - {id: 13, name: "Multiple Sites",               score: 1}
+    - {id: 14, name: "Facilitate Change",            score: 5}
+  id: 38
+  vaf: 1.03
+  afp: 66
+effort:
+  source: "default"
+  optimistic:   {hours_per_fp: 8,  total_hours: 512}
+  typical:      {hours_per_fp: 14, total_hours: 896}
+  conservative: {hours_per_fp: 20, total_hours: 1280}
+assumptions:
+  - "Order Confirmation Email counted as EO: it derives order totals and taxes."
+deferred:
+  - "Gift cards — planned for phase 2."
+rejected:
+  - "Marketplace for third-party sellers — outside the product vision."
+notes:
+  - {date: "2026-08-20", text: "Stakeholders agreed to drop the loyalty programme from this version."}
+  - {date: "2026-09-01", text: "Payment gateway confirmed as the only external data source."}

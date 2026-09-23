@@ -1,0 +1,101 @@
+---
+fp_control: "1.2"
+project_type: enhancement
+baseline_file: "bookshop.fpa.yaml"
+system: "Bookshop"
+date: "2026-09-20"
+boundary: "Adds customer wishlists, extends the monthly sales report with wishlist demand, and removes the external rates feed (prices are now in a single currency)."
+baseline_ufp: 64
+baseline_afp: 66
+baseline_vaf: 1.03
+baseline_functions:
+  ilf:
+    - {id: ilf-01, name: "Book",     fp: 7}
+    - {id: ilf-02, name: "Customer", fp: 7}
+    - {id: ilf-03, name: "Order",    fp: 7}
+  eif:
+    - {id: eif-01, name: "Payment Gateway Rates", fp: 5}
+  ei:
+    - {id: ei-01, name: "Create Book",       fp: 3}
+    - {id: ei-02, name: "Update Book",       fp: 3}
+    - {id: ei-03, name: "Deactivate Book",   fp: 3}
+    - {id: ei-04, name: "Register Customer", fp: 3}
+    - {id: ei-05, name: "Place Order",       fp: 6}
+  eo:
+    - {id: eo-01, name: "Monthly Sales Report",     fp: 5}
+    - {id: eo-02, name: "Order Confirmation Email", fp: 5}
+  eiq:
+    - {id: eiq-01, name: "Search Books",  fp: 3}
+    - {id: eiq-02, name: "View Order",    fp: 4}
+    - {id: eiq-03, name: "View Customer", fp: 3}
+add:
+  ilf:
+    - {id: ilf-04, name: "Wishlist", ret: 1, det: 4, complexity: Low, fp: 7}
+  ei:
+    - {id: ei-06, name: "Add Book to Wishlist", ftr: 2, det: 3, complexity: Low, fp: 3}
+  eiq:
+    - {id: eiq-04, name: "View Wishlist", ftr: 2, det: 5, complexity: Low, fp: 3}
+chg:
+  eo:
+    - id: eo-01
+      name: "Monthly Sales Report"
+      before: {fp: 5}
+      after:  {ftr: 3, det: 22, complexity: High, fp: 7}
+del:
+  eif:
+    - {id: eif-01, name: "Payment Gateway Rates", fp: 5}
+cfp:
+  ei:
+    - {id: cfp-ei-01, name: "Migrate Legacy Favourites", ftr: 1, det: 4, complexity: Low, fp: 3}
+updated_functions:
+  ilf:
+    - {id: ilf-01, name: "Book",     fp: 7}
+    - {id: ilf-02, name: "Customer", fp: 7}
+    - {id: ilf-03, name: "Order",    fp: 7}
+    - {id: ilf-04, name: "Wishlist", fp: 7}
+  ei:
+    - {id: ei-01, name: "Create Book",          fp: 3}
+    - {id: ei-02, name: "Update Book",          fp: 3}
+    - {id: ei-03, name: "Deactivate Book",      fp: 3}
+    - {id: ei-04, name: "Register Customer",    fp: 3}
+    - {id: ei-05, name: "Place Order",          fp: 6}
+    - {id: ei-06, name: "Add Book to Wishlist", fp: 3}
+  eo:
+    - {id: eo-01, name: "Monthly Sales Report",     fp: 7}
+    - {id: eo-02, name: "Order Confirmation Email", fp: 5}
+  eiq:
+    - {id: eiq-01, name: "Search Books",  fp: 3}
+    - {id: eiq-02, name: "View Order",    fp: 4}
+    - {id: eiq-03, name: "View Customer", fp: 3}
+    - {id: eiq-04, name: "View Wishlist", fp: 3}
+efp: 28
+updated_ufp: 74
+afp:
+  gsc:
+    - {id: 1,  name: "Data Communications",          score: 3}
+    - {id: 2,  name: "Distributed Data Processing",  score: 2}
+    - {id: 3,  name: "Performance",                  score: 3}
+    - {id: 4,  name: "Heavily Used Configuration",   score: 2}
+    - {id: 5,  name: "Transaction Rate",             score: 3}
+    - {id: 6,  name: "Online Data Entry",            score: 4}
+    - {id: 7,  name: "End-User Efficiency",          score: 4}
+    - {id: 8,  name: "Online Update",                score: 3}
+    - {id: 9,  name: "Complex Processing",           score: 2}
+    - {id: 10, name: "Reusability",                  score: 1}
+    - {id: 11, name: "Installation Ease",            score: 2}
+    - {id: 12, name: "Operational Ease",             score: 3}
+    - {id: 13, name: "Multiple Sites",               score: 1}
+    - {id: 14, name: "Facilitate Change",            score: 5}
+  id: 38
+  vaf: 1.03
+  afp: 76
+  efp_adjusted: 29
+effort:
+  source: "default"
+  optimistic:   {hours_per_fp: 8,  total_hours: 224}
+  typical:      {hours_per_fp: 14, total_hours: 392}
+  conservative: {hours_per_fp: 20, total_hours: 560}
+assumptions:
+  - "View Wishlist: FTR 2, DET 5 is Low on the EO/EQ matrix (it would be Avg on the EI matrix)."
+notes:
+  - {date: "2026-09-20", text: "Rates feed removed after the switch to single-currency pricing."}
