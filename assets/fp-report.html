@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Function Point Analysis</title>
+<style>
+:root {
+  --page: #f5f7fa; --surface: #ffffff; --surface-2: #f8fafc; --text: #1e293b; --muted: #64748b;
+  --border: #e2e8f0; --accent: #4F46E5; --accent-soft: #eef2ff; --grad-a: #4F46E5; --grad-b: #7C3AED;
+  --low: #047857; --low-bg: #ecfdf5; --avg: #a16207; --avg-bg: #fefce8; --high: #b91c1c; --high-bg: #fef2f2;
+  --warn: #92400e; --warn-bg: #fffbeb; --warn-border: #fcd34d;
+  --deferred: #b45309; --rejected: #9f1239; --notes: #4338ca;
+  --c-ilf: #4F46E5; --c-eif: #0e7490; --c-ei: #047857; --c-eo: #b45309; --c-eiq: #be185d; --bar-base: #94a3b8;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 8px 24px rgba(15, 23, 42, .06);
+  color-scheme: light;
+}
+body.dark {
+  --page: #0f0f1a; --surface: #1a1a2e; --surface-2: #22223a; --text: #e2e8f0; --muted: #94a3b8;
+  --border: #2e2e4a; --accent: #818CF8; --accent-soft: #26264a;
+  --low: #6ee7b7; --low-bg: #0f2e25; --avg: #fde047; --avg-bg: #2e2a10; --high: #fca5a5; --high-bg: #3a1618;
+  --warn: #fcd34d; --warn-bg: #2e2410; --warn-border: #78550f;
+  --deferred: #fbbf24; --rejected: #fb7185; --notes: #a5b4fc;
+  --c-ilf: #818CF8; --c-eif: #22d3ee; --c-ei: #34d399; --c-eo: #fbbf24; --c-eiq: #f472b6; --bar-base: #475569;
+  --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text); font: 15px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.container { max-width: 960px; margin: 0 auto; padding: 4.5rem 1rem 3rem; }
+.toolbar { position: fixed; top: .75rem; right: .75rem; display: flex; gap: .4rem; z-index: 10; }
+.toolbar button { font: inherit; font-size: .8rem; padding: .35rem .75rem; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); cursor: pointer; box-shadow: var(--shadow); }
+.toolbar button:hover { border-color: var(--accent); }
+button:focus-visible, [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+header.banner { background: linear-gradient(135deg, var(--grad-a), var(--grad-b)); color: #fff; border-radius: 16px;
+  padding: 2rem 2rem 1.6rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
+header.banner h1 { margin: 0 0 .2rem; font-size: 1.7rem; line-height: 1.25; }
+header.banner .subtitle { opacity: .85; font-size: .95rem; }
+.badges { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 1rem; }
+.badge { display: inline-block; font-size: .8rem; font-weight: 600; padding: .25rem .85rem; border-radius: 999px;
+  background: rgba(255, 255, 255, .18); border: 1px solid rgba(255, 255, 255, .35); }
+.card { background: var(--surface); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.tabbar { display: flex; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.tabbar::-webkit-scrollbar { display: none; }
+[role="tab"] { font: inherit; font-size: .9rem; white-space: nowrap; border: 0; background: none; color: var(--muted);
+  padding: .8rem 1.1rem; cursor: pointer; border-bottom: 2px solid transparent; }
+[role="tab"][aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+[role="tab"] .chip { font-size: .72rem; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: .05rem .5rem; margin-left: .35rem; }
+.panel { padding: 1.75rem; }
+.panel h2 { margin: 0 0 1rem; font-size: 1.25rem; }
+.panel h3 { margin: 1.75rem 0 .6rem; font-size: 1.02rem; }
+.panel p { margin: 0 0 1rem; }
+.muted { color: var(--muted); }
+.table-wrap { overflow-x: auto; margin: 0 0 1rem; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { text-align: left; padding: .5rem .65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.total td { font-weight: 700; border-top: 2px solid var(--border); border-bottom: 0; }
+td.rule { font-size: .82rem; color: var(--muted); white-space: nowrap; }
+.pill { display: inline-block; font-size: .75rem; font-weight: 600; padding: .05rem .55rem; border-radius: 999px; }
+.pill.Low { color: var(--low); background: var(--low-bg); }
+.pill.Avg { color: var(--avg); background: var(--avg-bg); }
+.pill.High { color: var(--high); background: var(--high-bg); }
+.fid { font-size: .72rem; color: var(--muted); margin-left: .45rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.callout.info { border-color: var(--border); background: var(--surface-2); }
+.flag { color: var(--warn); font-weight: 700; cursor: help; margin-left: .3rem; }
+.ref { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.25rem; align-items: start; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
+.ref table { font-size: .82rem; }
+.ref td, .ref th { padding: .3rem .5rem; text-align: center; }
+.ref .count { display: block; font-size: .7rem; color: var(--muted); }
+.ref .weights { font-size: .85rem; line-height: 1.9; }
+@media (max-width: 640px) { .ref { grid-template-columns: 1fr; } .panel { padding: 1.25rem; } }
+.callout { border: 1px solid var(--warn-border); background: var(--warn-bg); color: var(--text); border-radius: 10px; padding: .9rem 1.1rem; margin-bottom: 1.5rem; }
+.callout summary { cursor: pointer; font-weight: 600; color: var(--warn); }
+.callout ul { margin: .6rem 0 0; padding-left: 1.2rem; font-size: .88rem; }
+.callout p { margin: .5rem 0 0; font-size: .88rem; }
+.chart { margin: .5rem 0 1.25rem; }
+.chart svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: .35rem 1rem; font-size: .82rem; color: var(--muted); margin-top: .5rem; }
+.legend i { display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin-right: .35rem; vertical-align: -1px; }
+.split2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+.calc { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.25rem; }
+.calc .row { display: flex; justify-content: space-between; gap: 1rem; padding: .3rem 0; border-bottom: 1px dashed var(--border); }
+.calc .row:last-child { border-bottom: 0; }
+.calc .big { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+.squares { letter-spacing: .1em; color: var(--accent); white-space: nowrap; }
+.squares .off { color: var(--border); }
+.scope-block { border-left: 4px solid var(--accent); padding: .1rem 0 .1rem 1rem; margin-bottom: 1.5rem; }
+.scope-block h3 { margin-top: 0; }
+.scope-block.deferred { border-color: var(--deferred); } .scope-block.deferred h3 { color: var(--deferred); }
+.scope-block.rejected { border-color: var(--rejected); } .scope-block.rejected h3 { color: var(--rejected); }
+.scope-block.notes { border-color: var(--notes); } .scope-block.notes h3 { color: var(--notes); }
+.scope-block ul { margin: 0; padding-left: 1.2rem; }
+.scope-block.rejected li { color: var(--muted); }
+.error { max-width: 640px; margin: 4rem auto; padding: 1.5rem; background: var(--surface); border-radius: 12px; box-shadow: var(--shadow); }
+@media print {
+  :root, body.dark {
+    --page: #fff; --surface: #fff; --surface-2: #f8fafc; --text: #111827; --muted: #4b5563; --border: #d1d5db;
+    --accent: #3730a3; --accent-soft: #eef2ff; --low: #065f46; --low-bg: #fff; --avg: #854d0e; --avg-bg: #fff; --high: #991b1b; --high-bg: #fff;
+    --c-ilf: #1e1b4b; --c-eif: #155e75; --c-ei: #065f46; --c-eo: #92400e; --c-eiq: #831843; --bar-base: #9ca3af; --shadow: none;
+    color-scheme: light;
+  }
+  body { background: #fff; font-size: 12px; }
+  .container { max-width: none; padding: 0; }
+  .toolbar, .tabbar { display: none !important; }
+  .card, .callout, .ref, .calc { box-shadow: none; border-radius: 0; }
+  header.banner { border-radius: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .chart, .pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .panel, .panel[hidden] { display: block !important; padding: 1rem 0; }
+  body.print-simple .panel:not(#panel-overview) { display: none !important; }
+  .panel + .panel { break-before: page; }
+  thead { display: table-header-group; }
+  tr, .ref, .calc, .chart, .scope-block { break-inside: avoid; }
+  .callout details > *:not(summary) { display: block; }
+}
+</style>
+</head>
+<body>
+<div class="toolbar" id="toolbar" hidden>
+  <button type="button" id="btn-theme"></button>
+  <button type="button" id="btn-print"></button>
+  <button type="button" id="btn-summary"></button>
+</div>
+<main class="container" id="app"></main>
+<script>
+(function () {
+  'use strict';
+
+  // ── IFPUG tables ───────────────────────────────────────────────────────
+  var INF = Infinity;
+  var GRID = [['Low', 'Low', 'Avg'], ['Low', 'Avg', 'High'], ['Avg', 'High', 'High']];
+  var MATRICES = {
+    data: { row: 'RET', rows: [[1, 1], [2, 5], [6, INF]], cols: [[1, 19], [20, 50], [51, INF]] },
+    ei:   { row: 'FTR', rows: [[0, 1], [2, 2], [3, INF]], cols: [[1, 4], [5, 15], [16, INF]] },
+    eo:   { row: 'FTR', rows: [[0, 1], [2, 3], [4, INF]], cols: [[1, 5], [6, 19], [20, INF]] } // EO and EQ share this matrix
+  };
+  var TYPES = ['ilf', 'eif', 'ei', 'eo', 'eiq'];
+  var TYPE_INFO = {
+    ilf: { m: 'data', key: 'ret', w: { Low: 7, Avg: 10, High: 15 } },
+    eif: { m: 'data', key: 'ret', w: { Low: 5, Avg: 7, High: 10 } },
+    ei:  { m: 'ei',   key: 'ftr', w: { Low: 3, Avg: 4, High: 6 } },
+    eo:  { m: 'eo',   key: 'ftr', w: { Low: 4, Avg: 5, High: 7 } },
+    eiq: { m: 'eo',   key: 'ftr', w: { Low: 3, Avg: 4, High: 6 } }
+  };
+  var DEFAULT_RATES = { optimistic: 8, typical: 14, conservative: 20 };
+
+  // ── Labels ─────────────────────────────────────────────────────────────
+  var I18N = {
+    en: {
+      reportDev: 'Function Point Analysis', reportEnh: 'Enhancement Project Analysis',
+      dark: '🌙 Dark', light: '☀️ Light', print: 'Print', summary: 'Summary',
+      overview: 'Overview', afpTab: 'AFP', effortTab: 'Effort & Risks', scopeTab: 'Scope',
+      added: 'Added', changed: 'Changed', deleted: 'Deleted',
+      boundary: 'System boundary', enhScope: 'Enhancement scope',
+      type: 'Type', items: 'Items', fpTotal: 'FP Total', pctUfp: '% of UFP', total: 'Total',
+      name: 'Name', rule: 'Rule applied', complexity: 'Complexity', fp: 'FP',
+      Low: 'Low', Avg: 'Avg', High: 'High',
+      matrix: 'IFPUG complexity matrix', weights: 'Weights', subtotal: 'Subtotal', cellCount: '{n} item(s)',
+      num: '#', gsc: 'General System Characteristic', score: 'Score', vafCard: 'Value Adjustment Factor',
+      id: 'ID (sum of scores)', vaf: 'VAF', afp: 'AFP', ufp: 'UFP', base: 'Base',
+      scenario: 'Scenario', hoursPerFp: 'Hours per FP', totalHours: 'Total hours',
+      optimistic: 'Optimistic', typical: 'Typical', conservative: 'Conservative',
+      effortOn: 'Effort based on {label} = {value}', assumptions: 'Assumptions & risks',
+      deferred: 'Deferred', rejected: 'Rejected', notes: 'Notes', date: 'Date', note: 'Note',
+      checks: 'Consistency checks ({n})',
+      checksIntro: 'Totals in this report are recomputed from the item lists; item FP values are shown as stored. These differences were found:',
+      chkItem: '{type} “{name}”: stored {stored}, IFPUG table gives {calc} ({rule})',
+      chkTotal: '{label}: stored {stored}, recomputed {calc}',
+      chkMissing: '{type}: detail file not included in the report data',
+      chkLegacy: 'Schema 1.1 file: its stored DEFP ({stored}) excluded deletions. This report shows the IFPUG EFP ({calc}).',
+      chkUpdatedDerived: 'No updated_functions snapshot in the file — the per-type updated totals were derived from baseline − DEL − CHG(before) + CHG(after) + ADD.',
+      chkNotInBaseline: '{block}: {type} “{name}” is not in baseline_functions',
+      chkAddDup: 'Added {type} “{name}” already exists in the baseline and is not deleted — should it be a CHG?',
+      chkDupId: 'Duplicate id “{id}”: {a} and {b}',
+      chkDupName: 'Duplicate {type} name “{name}”',
+      chkNoIds: '{n} function(s) without an id — schema 1.2 gives every function a stable id (e.g. ei-07)',
+      chkGsc: '{n} GSC scores found, 14 expected',
+      partial: 'Partial count', partialNote: 'Checkpoint — counted so far: {types}. Remaining types are not included; UFP is incomplete.',
+      srcTeam: 'Rates: team productivity data.',
+      srcDefault: 'Rates: illustrative defaults — not a published benchmark. Calibrate with your own project history.',
+      srcOther: 'Rates source: {src}',
+      srcMissing: 'Rates source not recorded — treat them as illustrative defaults.',
+      baseline: 'Baseline', updated: 'Updated', baselineUfp: 'Baseline UFP', updatedUfp: 'Updated UFP',
+      efp: 'EFP', efpAdj: 'EFP (adjusted)', category: 'Category', functions: 'Functions',
+      application: 'Application (Updated UFP)', project: 'Project (EFP)',
+      rAdd: 'Added (ADD)', rChgA: 'Changed — after (CHG after)', rChgB: 'Changed — before (CHG before)',
+      rDel: 'Deleted (DEL)', rCfp: 'Conversion (CFP)',
+      efpExplain: 'EFP is the size of the enhancement work (added, changed, deleted and conversion functions). Updated UFP is the size of the application after deployment.',
+      beforeFp: 'Before FP', afterRule: 'After — rule applied', afterFp: 'After FP', delta: 'Δ FP', baselineFp: 'Baseline FP',
+      conversion: 'Conversion functions (CFP)',
+      conversionNote: 'Counted in EFP only — discarded after deployment, not part of the updated application.',
+      vafBefore: 'VAF before (for DEL)', vafAfter: 'VAF after',
+      typeNames: { ilf: 'Internal Logical Files', eif: 'External Interface Files', ei: 'External Inputs', eo: 'External Outputs', eiq: 'External Inquiries' },
+      abbr: { ilf: 'ILF', eif: 'EIF', ei: 'EI', eo: 'EO', eiq: 'EIQ' },
+      gscNames: null,
+      noData: 'No report data found. Append a <script type="application/json" id="fpa-data"> block to this file (see fp-control-html.md).',
+      badData: 'The report data block is not valid JSON: {msg}'
+    },
+    'pt-BR': {
+      reportDev: 'Análise de Pontos de Função', reportEnh: 'Análise de Projeto de Melhoria',
+      dark: '🌙 Escuro', light: '☀️ Claro', print: 'Imprimir', summary: 'Resumo',
+      overview: 'Visão geral', afpTab: 'AFP', effortTab: 'Esforço e riscos', scopeTab: 'Escopo',
+      added: 'Incluídas', changed: 'Alteradas', deleted: 'Excluídas',
+      boundary: 'Fronteira do sistema', enhScope: 'Escopo da melhoria',
+      type: 'Tipo', items: 'Itens', fpTotal: 'Total PF', pctUfp: '% do UFP', total: 'Total',
+      name: 'Nome', rule: 'Regra aplicada', complexity: 'Complexidade', fp: 'PF',
+      Low: 'Baixa', Avg: 'Média', High: 'Alta',
+      matrix: 'Matriz de complexidade IFPUG', weights: 'Pesos', subtotal: 'Subtotal', cellCount: '{n} item(ns)',
+      num: 'Nº', gsc: 'Característica Geral do Sistema', score: 'Nota', vafCard: 'Fator de Ajuste (VAF)',
+      id: 'NI (soma das notas)', vaf: 'VAF', afp: 'AFP', ufp: 'UFP', base: 'Base',
+      scenario: 'Cenário', hoursPerFp: 'Horas por PF', totalHours: 'Total de horas',
+      optimistic: 'Otimista', typical: 'Típico', conservative: 'Conservador',
+      effortOn: 'Esforço baseado em {label} = {value}', assumptions: 'Premissas e riscos',
+      deferred: 'Adiados', rejected: 'Rejeitados', notes: 'Notas', date: 'Data', note: 'Nota',
+      checks: 'Verificações de consistência ({n})',
+      checksIntro: 'Os totais deste relatório são recalculados a partir das listas de itens; os PF de cada item são exibidos como armazenados. Foram encontradas estas diferenças:',
+      chkItem: '{type} “{name}”: armazenado {stored}, a tabela IFPUG indica {calc} ({rule})',
+      chkTotal: '{label}: armazenado {stored}, recalculado {calc}',
+      chkMissing: '{type}: arquivo de detalhe não incluído nos dados do relatório',
+      chkLegacy: 'Arquivo no esquema 1.1: o DEFP armazenado ({stored}) não incluía exclusões. Este relatório mostra o EFP do IFPUG ({calc}).',
+      chkUpdatedDerived: 'O arquivo não tem updated_functions — os totais atualizados por tipo foram derivados de base − DEL − CHG(antes) + CHG(depois) + ADD.',
+      chkNotInBaseline: '{block}: {type} “{name}” não está em baseline_functions',
+      chkAddDup: '{type} incluída “{name}” já existe na base e não foi excluída — deveria ser uma CHG?',
+      chkDupId: 'Id duplicado “{id}”: {a} e {b}',
+      chkDupName: 'Nome de {type} duplicado “{name}”',
+      chkNoIds: '{n} função(ões) sem id — o esquema 1.2 dá a cada função um id estável (ex.: ei-07)',
+      chkGsc: '{n} notas de CGS encontradas, 14 esperadas',
+      partial: 'Contagem parcial', partialNote: 'Checkpoint — contados até agora: {types}. Os tipos restantes não estão incluídos; o UFP está incompleto.',
+      srcTeam: 'Taxas: dados de produtividade da equipe.',
+      srcDefault: 'Taxas: valores ilustrativos — não são um benchmark publicado. Calibre com o histórico dos seus projetos.',
+      srcOther: 'Fonte das taxas: {src}',
+      srcMissing: 'Fonte das taxas não registrada — trate-as como valores ilustrativos.',
+      baseline: 'Base', updated: 'Atualizado', baselineUfp: 'UFP base', updatedUfp: 'UFP atualizado',
+      efp: 'EFP', efpAdj: 'EFP (ajustado)', category: 'Categoria', functions: 'Funções',
+      application: 'Aplicação (UFP atualizado)', project: 'Projeto (EFP)',
+      rAdd: 'Incluídas (ADD)', rChgA: 'Alteradas — depois (CHG depois)', rChgB: 'Alteradas — antes (CHG antes)',
+      rDel: 'Excluídas (DEL)', rCfp: 'Conversão (CFP)',
+      efpExplain: 'O EFP mede o tamanho do trabalho da melhoria (funções incluídas, alteradas, excluídas e de conversão). O UFP atualizado é o tamanho da aplicação após a implantação.',
+      beforeFp: 'PF antes', afterRule: 'Depois — regra aplicada', afterFp: 'PF depois', delta: 'Δ PF', baselineFp: 'PF base',
+      conversion: 'Funções de conversão (CFP)',
+      conversionNote: 'Contam apenas no EFP — descartadas após a implantação, não fazem parte da aplicação atualizada.',
+      vafBefore: 'VAF antes (para DEL)', vafAfter: 'VAF depois',
+      typeNames: { ilf: 'Arquivos Lógicos Internos', eif: 'Arquivos de Interface Externa', ei: 'Entradas Externas', eo: 'Saídas Externas', eiq: 'Consultas Externas' },
+      abbr: { ilf: 'ILF', eif: 'EIF', ei: 'EI', eo: 'EO', eiq: 'EIQ' },
+      gscNames: ['Comunicação de Dados', 'Processamento Distribuído', 'Desempenho', 'Configuração Altamente Utilizada',
+        'Volume de Transações', 'Entrada de Dados On-line', 'Eficiência do Usuário Final', 'Atualização On-line',
+        'Processamento Complexo', 'Reusabilidade', 'Facilidade de Instalação', 'Facilidade de Operação',
+        'Múltiplos Locais', 'Facilidade de Mudanças'],
+      noData: 'Nenhum dado de relatório encontrado.',
+      badData: 'O bloco de dados do relatório não é um JSON válido: {msg}'
+    }
+  };
+
+  // ── Helpers ────────────────────────────────────────────────────────────
+  var L, LANG, NF, NF2;
+  function t(key, vars) {
+    var s = L[key] != null ? L[key] : I18N.en[key];
+    if (vars) s = String(s).replace(/\{(\w+)\}/g, function (_, k) { return vars[k] != null ? vars[k] : ''; });
+    return s;
+  }
+  function el(tag, attrs) {
+    var node = document.createElement(tag);
+    for (var k in attrs || {}) {
+      var v = attrs[k];
+      if (v == null || v === false) continue;
+      if (k === 'text') node.textContent = v;
+      else if (k === 'class') node.className = v;
+      else node.setAttribute(k, v === true ? '' : v);
+    }
+    for (var i = 2; i < arguments.length; i++) append(node, arguments[i]);
+    return node;
+  }
+  function append(node, child) {
+    if (child == null || child === false) return;
+    if (Array.isArray(child)) { child.forEach(function (c) { append(node, c); }); return; }
+    node.appendChild(typeof child === 'object' ? child : document.createTextNode(String(child)));
+  }
+  function svgEl(tag, attrs) {
+    var node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (var k in attrs || {}) { if (k === 'text') node.textContent = attrs[k]; else node.setAttribute(k, attrs[k]); }
+    return node;
+  }
+  function fmt(n) { return n == null || isNaN(n) ? '—' : NF.format(n); }
+  function fmt2(n) { return n == null || isNaN(n) ? '—' : NF2.format(n); }
+  function signed(n, sign) { return n ? sign + NF.format(n) : NF.format(0); }
+  function round(n) { return Math.round(Math.round(n * 1e6) / 1e6); }
+  function round2(n) { return Math.round(n * 100 + 1e-9) / 100; }
+  function list(v) { return Array.isArray(v) ? v.filter(function (x) { return x != null; }) : []; }
+  function num(v) { return typeof v === 'number' ? v : (v != null && v !== '' && !isNaN(+v) ? +v : null); }
+  function sumFp(items, pick) { return list(items).reduce(function (s, it) { return s + (num(pick ? pick(it) : it.fp) || 0); }, 0); }
+  function normCx(s) {
+    var v = String(s || '').toLowerCase();
+    if (/^(l|b)/.test(v)) return 'Low';
+    if (/^(a|m)/.test(v)) return v.indexOf('alt') === 0 ? 'High' : 'Avg';
+    if (/^h/.test(v)) return 'High';
+    return null;
+  }
+  function rangeLabel(r) { return r[1] === INF ? r[0] + '+' : (r[0] === r[1] ? String(r[0]) : r[0] + '–' + r[1]); }
+  function idx(ranges, v) { for (var i = 0; i < ranges.length; i++) if (v <= ranges[i][1]) return i; return ranges.length - 1; }
+  function fmtDate(s) {
+    if (!s) return '';
+    var d = new Date(String(s).slice(0, 10) + 'T00:00:00Z');
+    if (isNaN(d)) return String(s);
+    try { return new Intl.DateTimeFormat(LANG, { dateStyle: 'long', timeZone: 'UTC' }).format(d); } catch (e) { return String(s); }
+  }
+
+  // Classify an item against the IFPUG matrix; compare with stored values.
+  var issues = [];
+  function evaluate(type, item) {
+    var info = TYPE_INFO[type], m = MATRICES[info.m];
+    var rv = num(item[info.key]), det = num(item.det);
+    var res = { id: item.id, name: item.name, rv: rv, det: det, storedCx: normCx(item.complexity), storedFp: num(item.fp), cx: null, fp: null, rule: null };
+    if (rv != null && det != null) {
+      res.ri = idx(m.rows, rv); res.ci = idx(m.cols, det);
+      res.cx = GRID[res.ri][res.ci]; res.fp = info.w[res.cx];
+      res.rule = m.row + ' ' + rangeLabel(m.rows[res.ri]) + ', DET ' + rangeLabel(m.cols[res.ci]) + ' → ' + t(res.cx);
+      if ((res.storedCx && res.storedCx !== res.cx) || (res.storedFp != null && res.storedFp !== res.fp)) {
+        res.mismatch = t('chkItem', {
+          type: L.abbr[type], name: item.name,
+          stored: [res.storedCx ? t(res.storedCx) : null, res.storedFp].filter(function (x) { return x != null; }).join(' / '),
+          calc: t(res.cx) + ' / ' + res.fp, rule: res.rule
+        });
+        issues.push(res.mismatch);
+      }
+    }
+    if (res.storedFp == null) res.storedFp = res.fp;
+    if (!res.storedCx) res.storedCx = res.cx;
+    return res;
+  }
+  function checkTotal(label, stored, calc) {
+    if (num(stored) != null && Math.abs(num(stored) - calc) > 0.005) issues.push(t('chkTotal', { label: label, stored: fmt2(num(stored)), calc: fmt2(calc) }));
+  }
+
+  function checkIds(pairs, require) {
+    var seen = {}, missing = 0;
+    pairs.forEach(function (p) {
+      var names = {};
+      list(p.items).forEach(function (it) {
+        if (it.id == null) missing++;
+        else if (seen[it.id] != null) issues.push(t('chkDupId', { id: it.id, a: seen[it.id], b: it.name }));
+        else seen[it.id] = it.name;
+        if (names[it.name]) issues.push(t('chkDupName', { type: L.abbr[p.type], name: it.name }));
+        names[it.name] = 1;
+      });
+    });
+    if (missing && require) issues.push(t('chkNoIds', { n: missing }));
+  }
+  function isV12(fpa) { return String(fpa.fp_control || '') >= '1.2'; }
+  function pairsOf(map) { return TYPES.map(function (type) { return { type: type, items: map[type] }; }); }
+  function nameCell(e) { return td([e.name, e.id != null ? el('span', { class: 'fid', text: e.id }) : null, flag(e.mismatch)]); }
+
+  // ── Building blocks ────────────────────────────────────────────────────
+  function table(head, rows, opts) {
+    opts = opts || {};
+    var thead = el('thead', null, el('tr', null, head.map(function (h) {
+      return el('th', { class: h.num ? 'num' : null, scope: 'col', text: h.label || h });
+    })));
+    var tbody = el('tbody', null, rows);
+    return el('div', { class: 'table-wrap' }, el('table', { class: opts.cls }, thead, tbody));
+  }
+  function td(v, cls) { return el('td', { class: cls }, v); }
+  function pill(cx) { return cx ? el('span', { class: 'pill ' + cx, text: t(cx) }) : '—'; }
+  function flag(msg) { return msg ? el('span', { class: 'flag', title: msg, 'aria-label': msg, text: '⚠' }) : null; }
+  function breakdown(evals) {
+    var c = { Low: 0, Avg: 0, High: 0 };
+    evals.forEach(function (e) { if (c[e.storedCx] != null) c[e.storedCx]++; });
+    return t('Low') + '×' + c.Low + ' · ' + t('Avg') + '×' + c.Avg + ' · ' + t('High') + '×' + c.High;
+  }
+
+  function refCard(type, evals) {
+    var info = TYPE_INFO[type], m = MATRICES[info.m];
+    var head = el('tr', null, el('th', { text: m.row + ' \\ DET' }), m.cols.map(function (c) { return el('th', { text: rangeLabel(c) }); }));
+    var body = m.rows.map(function (r, ri) {
+      return el('tr', null, el('th', { scope: 'row', text: rangeLabel(r) }), m.cols.map(function (c, ci) {
+        var n = evals.filter(function (e) { return e.ri === ri && e.ci === ci; }).length;
+        return el('td', null, pill(GRID[ri][ci]), n ? el('span', { class: 'count', text: t('cellCount', { n: n }) }) : null);
+      }));
+    });
+    return el('div', { class: 'ref' },
+      el('div', null, el('strong', { text: t('matrix') }), el('div', { class: 'table-wrap' }, el('table', null, el('thead', null, head), el('tbody', null, body)))),
+      el('div', { class: 'weights' }, el('strong', { text: t('weights') }), el('br'),
+        ['Low', 'Avg', 'High'].map(function (cx) { return [pill(cx), ' = ' + info.w[cx], el('br')]; })));
+  }
+
+  function itemTable(type, evals, withSubtotal) {
+    var key = TYPE_INFO[type].key.toUpperCase();
+    var rows = evals.map(function (e) {
+      return el('tr', null, nameCell(e), td(fmt(e.rv), 'num'), td(fmt(e.det), 'num'),
+        td(e.rule || '—', 'rule'), td(pill(e.storedCx)), td(fmt(e.storedFp), 'num'));
+    });
+    if (withSubtotal) {
+      rows.push(el('tr', { class: 'total' }, td(t('subtotal')), td(''), td(''), el('td', { colspan: 2, class: 'rule', text: breakdown(evals) }),
+        td(fmt(sumFp(evals, function (e) { return e.storedFp; })), 'num')));
+    }
+    return table([t('name'), { label: key, num: 1 }, { label: 'DET', num: 1 }, t('rule'), t('complexity'), { label: t('fp'), num: 1 }], rows);
+  }
+
+  function stackedBar(segs) {
+    var total = segs.reduce(function (s, x) { return s + x.value; }, 0);
+    if (!total) return null;
+    var svg = svgEl('svg', { viewBox: '0 0 1000 48', role: 'img', 'aria-label': segs.map(function (s) { return s.label + ' ' + s.value; }).join(', ') });
+    var x = 0;
+    segs.forEach(function (s) {
+      var w = s.value / total * 1000;
+      svg.appendChild(svgEl('rect', { x: x, y: 0, width: Math.max(w - 2, 1), height: 48, rx: 4, style: 'fill:var(--c-' + s.key + ')' }));
+      if (w > 90) svg.appendChild(svgEl('text', { x: x + w / 2, y: 30, 'text-anchor': 'middle', 'font-size': 16, 'font-weight': 600, fill: '#fff', text: s.label + ' ' + fmt(s.value) }));
+      x += w;
+    });
+    return el('div', { class: 'chart' }, svg, el('div', { class: 'legend' }, segs.map(function (s) {
+      return el('span', null, el('i', { style: 'background:var(--c-' + s.key + ')' }), s.label + ' ' + fmt(s.value) + ' (' + fmt2(s.value / total * 100) + '%)');
+    })));
+  }
+
+  function groupedBars(rows) {
+    rows = rows.filter(function (r) { return r.a || r.b; });
+    if (!rows.length) return null;
+    var max = Math.max.apply(null, rows.map(function (r) { return Math.max(r.a, r.b); })) || 1;
+    var rowH = 58, labelW = 80, barMax = 820;
+    var svg = svgEl('svg', { viewBox: '0 0 1000 ' + rows.length * rowH, role: 'img',
+      'aria-label': rows.map(function (r) { return r.label + ': ' + t('baseline') + ' ' + r.a + ', ' + t('updated') + ' ' + r.b; }).join('; ') });
+    rows.forEach(function (r, i) {
+      var y = i * rowH;
+      svg.appendChild(svgEl('text', { x: 0, y: y + 30, 'font-size': 16, 'font-weight': 600, style: 'fill:var(--text)', text: r.label }));
+      [[r.a, 'var(--bar-base)', 4], [r.b, 'var(--accent)', 26]].forEach(function (b) {
+        var w = b[0] / max * barMax;
+        svg.appendChild(svgEl('rect', { x: labelW, y: y + b[2], width: Math.max(w, 1), height: 20, rx: 3, style: 'fill:' + b[1] }));
+        svg.appendChild(svgEl('text', { x: labelW + w + 8, y: y + b[2] + 15, 'font-size': 14, style: 'fill:var(--muted)', text: fmt(b[0]) }));
+      });
+    });
+    return el('div', { class: 'chart' }, svg, el('div', { class: 'legend' },
+      el('span', null, el('i', { style: 'background:var(--bar-base)' }), t('baseline')),
+      el('span', null, el('i', { style: 'background:var(--accent)' }), t('updated'))));
+  }
+
+  function afpPanel(afp, baseLabel, baseValue, extra) {
+    var gsc = list(afp.gsc);
+    if (gsc.length !== 14) issues.push(t('chkGsc', { n: gsc.length }));
+    var id = gsc.reduce(function (s, g) { return s + (num(g.score) || 0); }, 0);
+    var vaf = round2(0.65 + id * 0.01), afpVal = round(baseValue * vaf);
+    checkTotal('ID', afp.id, id); checkTotal('VAF', afp.vaf, vaf); checkTotal(t('afp'), afp.afp, afpVal);
+    var rows = gsc.map(function (g, i) {
+      var s = num(g.score) || 0, gid = num(g.id) || i + 1;
+      var name = (L.gscNames && L.gscNames[gid - 1]) || g.name;
+      return el('tr', null, td(fmt(gid), 'num'), td(name), td(fmt(s), 'num'),
+        td(el('span', { class: 'squares', 'aria-hidden': 'true' }, '■'.repeat(s), el('span', { class: 'off', text: '■'.repeat(Math.max(0, 5 - s)) }))));
+    });
+    function row(k, v, big) { return el('div', { class: 'row' }, el('span', { text: k }), el('span', { class: big ? 'big' : null, text: v })); }
+    var card = el('div', { class: 'calc' },
+      row(baseLabel, fmt(baseValue)), row(t('id'), fmt(id)),
+      row(t('vaf'), '0.65 + ' + fmt(id) + ' × 0.01 = ' + fmt2(vaf)),
+      extra ? extra(vaf) : null,
+      el('div', { class: 'row' }, el('span', null, el('strong', { text: t('afp') }), el('br'),
+        el('span', { class: 'muted', text: fmt(baseValue) + ' × ' + fmt2(vaf) })), el('span', { class: 'big', text: fmt(afpVal) })));
+    return { id: id, vaf: vaf, afp: afpVal, nodes: [
+      table([{ label: t('num'), num: 1 }, t('gsc'), { label: t('score'), num: 1 }, ''], rows),
+      el('h3', { text: t('vafCard') }), card] };
+  }
+
+  function effortBlock(fpa, label, base) {
+    var eff = fpa.effort || {};
+    var rows = ['optimistic', 'typical', 'conservative'].map(function (k) {
+      var rate = num((eff[k] || {}).hours_per_fp) || DEFAULT_RATES[k];
+      return el('tr', null, td(t(k)), td(fmt(rate), 'num'), td(fmt(round(base * rate)), 'num'));
+    });
+    return el('div', null, el('h3', { text: t('effortOn', { label: label, value: fmt(base) }) }),
+      table([t('scenario'), { label: t('hoursPerFp'), num: 1 }, { label: t('totalHours'), num: 1 }], rows));
+  }
+
+  function effortSource(fpa) {
+    var src = fpa.effort && fpa.effort.source;
+    var msg = !src ? t('srcMissing') : (src === 'team' ? t('srcTeam') : (src === 'default' ? t('srcDefault') : t('srcOther', { src: src })));
+    return el('p', { class: 'muted', text: msg });
+  }
+  function scopePanel(fpa) {
+    var out = [];
+    if (list(fpa.deferred).length) out.push(el('div', { class: 'scope-block deferred' }, el('h3', { text: '⏱ ' + t('deferred') }),
+      el('ul', null, list(fpa.deferred).map(function (s) { return el('li', { text: String(s) }); }))));
+    if (list(fpa.rejected).length) out.push(el('div', { class: 'scope-block rejected' }, el('h3', { text: '✕ ' + t('rejected') }),
+      el('ul', null, list(fpa.rejected).map(function (s) { return el('li', { text: String(s) }); }))));
+    var notes = list(fpa.notes).map(function (n) { return typeof n === 'object' ? { date: n.date ? String(n.date) : '', text: n.text } : { date: '', text: n }; });
+    if (notes.length) {
+      notes.sort(function (a, b) { return a.date === b.date ? 0 : (a.date < b.date ? 1 : -1); });
+      out.push(el('div', { class: 'scope-block notes' }, el('h3', { text: t('notes') }),
+        table([t('date'), t('note')], notes.map(function (n) { return el('tr', null, td(n.date ? fmtDate(n.date) : '—', 'rule'), td(String(n.text))); }))));
+    }
+    return out;
+  }
+  function scopeCount(fpa) { return list(fpa.deferred).length + list(fpa.rejected).length + list(fpa.notes).length; }
+  function assumptionsBlock(fpa) {
+    var a = list(fpa.assumptions);
+    return a.length ? [el('h3', { text: t('assumptions') }), el('ul', null, a.map(function (s) { return el('li', { text: String(s) }); }))] : null;
+  }
+
+  function byType(block) { var o = {}; TYPES.forEach(function (type) { o[type] = list((block || {})[type]); }); return o; }
+  function total(map, pick) { return TYPES.reduce(function (s, type) { return s + sumFp(map[type], pick); }, 0); }
+
+  // ── Development report ─────────────────────────────────────────────────
+  function buildDev(fpa) {
+    var tabs = [], evals = {}, totals = {};
+    var partial = fpa.status === 'partial';
+    TYPES.forEach(function (type) {
+      evals[type] = list(fpa[type]).map(function (it) { return evaluate(type, it); });
+      totals[type] = sumFp(evals[type], function (e) { return e.storedFp; });
+      if (fpa.split && fpa.detail_files && fpa.detail_files[type] && !evals[type].length && !partial) issues.push(t('chkMissing', { type: L.abbr[type] }));
+      if (fpa.function_counts && fpa.function_counts[type] && evals[type].length) checkTotal(L.abbr[type] + ' FP', fpa.function_counts[type].fp, totals[type]);
+    });
+    var active = TYPES.filter(function (type) { return evals[type].length; });
+    var ufp = active.reduce(function (s, type) { return s + totals[type]; }, 0);
+    checkTotal(t('ufp'), fpa.ufp, ufp);
+    if (fpa.baseline_functions) checkTotal(t('ufp') + ' (baseline_functions)', ufp, total(byType(fpa.baseline_functions)));
+    checkIds(pairsOf(evals), isV12(fpa));
+
+    var afpRes = fpa.afp ? afpPanel(fpa.afp, t('ufp'), ufp) : null;
+
+    // Overview
+    var rows = active.map(function (type) {
+      return el('tr', null, td(L.abbr[type] + ' — ' + L.typeNames[type]), td(fmt(evals[type].length), 'num'),
+        td(fmt(totals[type]), 'num'), td(fmt2(ufp ? totals[type] / ufp * 100 : 0) + '%', 'num'));
+    });
+    rows.push(el('tr', { class: 'total' }, td(t('ufp')), td(fmt(active.reduce(function (s, x) { return s + evals[x].length; }, 0)), 'num'), td(fmt(ufp), 'num'), td(fmt2(100) + '%', 'num')));
+    var overview = [
+      el('h3', { text: t('boundary') }), el('p', { text: fpa.boundary || '' }),
+      stackedBar(active.map(function (type) { return { key: type, label: L.abbr[type], value: totals[type] }; })),
+      table([t('type'), { label: t('items'), num: 1 }, { label: t('fpTotal'), num: 1 }, { label: t('pctUfp'), num: 1 }], rows)
+    ];
+    if (afpRes) overview.push(table([{ label: t('id'), num: 1 }, { label: t('vaf'), num: 1 }, { label: t('afp'), num: 1 }],
+      [el('tr', null, td(fmt(afpRes.id), 'num'), td(fmt2(afpRes.vaf), 'num'), td(fmt(afpRes.afp), 'num'))]));
+    if (partial) overview.unshift(el('div', { class: 'callout info' }, el('strong', { text: t('partial') }),
+      el('p', { text: t('partialNote', { types: list(fpa.counted_types).map(function (x) { return L.abbr[x] || x; }).join(', ') || '—' }) })));
+    tabs.push({ id: 'overview', label: t('overview'), nodes: overview });
+
+    active.forEach(function (type) {
+      tabs.push({ id: type, label: L.abbr[type], chip: fmt(totals[type]), title: L.abbr[type] + ' — ' + L.typeNames[type],
+        nodes: [refCard(type, evals[type]), itemTable(type, evals[type], true)] });
+    });
+    if (afpRes) tabs.push({ id: 'afp', label: t('afpTab'), nodes: afpRes.nodes });
+
+    var effort = [];
+    if (fpa.effort) {
+      effort.push(el('div', { class: 'split2' }, effortBlock(fpa, t('ufp'), ufp), afpRes ? effortBlock(fpa, t('afp'), afpRes.afp) : null), effortSource(fpa));
+    }
+    effort.push(assumptionsBlock(fpa));
+    if (fpa.effort || list(fpa.assumptions).length) tabs.push({ id: 'effort', label: t('effortTab'), nodes: effort });
+    if (scopeCount(fpa)) tabs.push({ id: 'scope', label: t('scopeTab'), chip: fmt(scopeCount(fpa)), nodes: scopePanel(fpa) });
+
+    var badges = [t('ufp') + ' ' + fmt(ufp)];
+    if (afpRes) badges.push(t('afp') + ' ' + fmt(afpRes.afp));
+    if (partial) badges.push(t('partial'));
+    return { title: t('reportDev'), badges: badges, tabs: tabs };
+  }
+
+  // ── Enhancement report ─────────────────────────────────────────────────
+  function buildEnh(fpa) {
+    var add = byType(fpa.add), chg = byType(fpa.chg), del = byType(fpa.del), cfp = byType(fpa.cfp);
+    var baseF = fpa.baseline_functions ? byType(fpa.baseline_functions) : null;
+    var updF = fpa.updated_functions ? byType(fpa.updated_functions) : null;
+    var addE = {}, cfpE = {}, chgE = {};
+    TYPES.forEach(function (type) {
+      addE[type] = add[type].map(function (it) { return evaluate(type, it); });
+      cfpE[type] = cfp[type].map(function (it) { return evaluate(type, it); });
+      chgE[type] = chg[type].map(function (it) {
+        var a = evaluate(type, Object.assign({ name: it.name }, it.after || {}));
+        a.before = num((it.before || {}).fp) || 0; return a;
+      });
+    });
+    var ADD = total(addE, function (e) { return e.storedFp; }), CFP = total(cfpE, function (e) { return e.storedFp; });
+    var CHGA = total(chgE, function (e) { return e.storedFp; }), CHGB = total(chgE, function (e) { return e.before; });
+    var DEL = total(del);
+    var baselineUfp = num(fpa.baseline_ufp);
+    if (baselineUfp == null && baseF) baselineUfp = total(baseF);
+    if (baseF) {
+      checkTotal(t('baselineUfp') + ' (baseline_functions)', baselineUfp, total(baseF));
+      var baseIds = {}, baseNames = {}, delNames = {};
+      TYPES.forEach(function (type) {
+        baseF[type].forEach(function (f) { if (f.id != null) baseIds[type + '|' + f.id] = 1; baseNames[type + '|' + f.name] = 1; });
+        del[type].forEach(function (f) { delNames[type + '|' + f.name] = 1; });
+      });
+      [['chg', chg], ['del', del]].forEach(function (b) {
+        TYPES.forEach(function (type) {
+          b[1][type].forEach(function (it) {
+            var known = it.id != null ? baseIds[type + '|' + it.id] : baseNames[type + '|' + (it.renamed_from || it.name)];
+            if (!known && !baseNames[type + '|' + (it.renamed_from || it.name)]) issues.push(t('chkNotInBaseline', { block: b[0], type: L.abbr[type], name: it.name }));
+          });
+        });
+      });
+      TYPES.forEach(function (type) {
+        add[type].forEach(function (it) {
+          if (baseNames[type + '|' + it.name] && !delNames[type + '|' + it.name]) issues.push(t('chkAddDup', { type: L.abbr[type], name: it.name }));
+        });
+      });
+      checkIds(pairsOf(baseF), isV12(fpa));
+    }
+    checkIds(TYPES.map(function (type) { return { type: type, items: add[type].concat(cfp[type]) }; }), isV12(fpa));
+    if (updF) checkIds(pairsOf(updF), true);
+    var EFP = ADD + CHGA + CFP + DEL;
+    var updatedUfp = (baselineUfp || 0) + ADD + CHGA - CHGB - DEL;
+    checkTotal(t('updatedUfp'), fpa.updated_ufp, updatedUfp);
+    if (fpa.efp != null) checkTotal(t('efp'), fpa.efp, EFP);
+    else if (fpa.defp != null) issues.push(t('chkLegacy', { stored: fmt(num(fpa.defp)), calc: fmt(EFP) }));
+    if (updF) checkTotal(t('updatedUfp') + ' (updated_functions)', total(updF), updatedUfp);
+    else if (baseF) issues.push(t('chkUpdatedDerived'));
+
+    var afpRes = null, efpAdj = null;
+    if (fpa.afp) {
+      var vafBefore = num(fpa.baseline_vaf) != null ? num(fpa.baseline_vaf) : (fpa.afp.vaf_before != null ? num(fpa.afp.vaf_before) : null);
+      afpRes = afpPanel(fpa.afp, t('updatedUfp'), updatedUfp, function (vaf) {
+        var vb = vafBefore != null ? vafBefore : vaf;
+        efpAdj = round((ADD + CHGA + CFP) * vaf + DEL * vb);
+        return [
+          el('div', { class: 'row' }, el('span', { text: t('vafBefore') }), el('span', { text: fmt2(vb) })),
+          el('div', { class: 'row' }, el('span', { text: t('efpAdj') }),
+            el('span', { text: '(' + fmt(ADD) + ' + ' + fmt(CHGA) + ' + ' + fmt(CFP) + ') × ' + fmt2(vaf) + ' + ' + fmt(DEL) + ' × ' + fmt2(vb) + ' = ' + fmt(efpAdj) }))
+        ];
+      });
+      checkTotal(t('efpAdj'), fpa.afp.efp_adjusted, efpAdj);
+    }
+
+    var tabs = [];
+    function count(map) { return TYPES.reduce(function (s, type) { return s + map[type].length; }, 0); }
+    function rrow(label, n, app, proj) { return el('tr', null, td(label), td(n == null ? '' : fmt(n), 'num'), td(app, 'num'), td(proj, 'num')); }
+    var recon = [
+      rrow(t('baselineUfp'), baseF ? count(baseF) : null, fmt(baselineUfp), '—'),
+      rrow(t('rAdd'), count(addE), signed(ADD, '+'), signed(ADD, '+')),
+      rrow(t('rChgA'), count(chgE), signed(CHGA, '+'), signed(CHGA, '+')),
+      rrow(t('rChgB'), count(chgE), signed(CHGB, '−'), '—'),
+      rrow(t('rDel'), count(del), signed(DEL, '−'), signed(DEL, '+'))
+    ];
+    if (count(cfpE)) recon.push(rrow(t('rCfp'), count(cfpE), '—', signed(CFP, '+')));
+    recon.push(el('tr', { class: 'total' }, td(t('total')), td(''), td(t('updatedUfp') + ' ' + fmt(updatedUfp), 'num'), td(t('efp') + ' ' + fmt(EFP), 'num')));
+
+    var perType = TYPES.map(function (type) {
+      var a = baseF ? sumFp(baseF[type]) : 0;
+      var b = updF ? sumFp(updF[type]) : a - sumFp(del[type]) - sumFp(chgE[type], function (e) { return e.before; })
+        + sumFp(chgE[type], function (e) { return e.storedFp; }) + sumFp(addE[type], function (e) { return e.storedFp; });
+      return { key: type, label: L.abbr[type], a: a, b: b };
+    });
+    tabs.push({ id: 'overview', label: t('overview'), nodes: [
+      el('h3', { text: t('enhScope') }), el('p', { text: fpa.boundary || '' }),
+      table([t('category'), { label: t('functions'), num: 1 }, { label: t('application'), num: 1 }, { label: t('project'), num: 1 }], recon),
+      el('p', { class: 'muted', text: t('efpExplain') }),
+      baseF ? groupedBars(perType) : null
+    ] });
+
+    function grouped(map, render) {
+      return TYPES.filter(function (type) { return map[type].length; }).map(function (type) {
+        return [el('h3', { text: L.abbr[type] + ' — ' + L.typeNames[type] }), render(type, map[type])];
+      });
+    }
+    if (count(addE) || count(cfpE)) {
+      var addNodes = grouped(addE, function (type, ev) { return itemTable(type, ev, true); });
+      if (count(cfpE)) addNodes.push(el('h3', { text: t('conversion') }), el('p', { class: 'muted', text: t('conversionNote') }),
+        grouped(cfpE, function (type, ev) { return itemTable(type, ev, true); }));
+      tabs.push({ id: 'added', label: t('added'), chip: fmt(ADD + CFP), nodes: addNodes });
+    }
+    if (count(chgE)) {
+      tabs.push({ id: 'changed', label: t('changed'), chip: fmt(CHGA), nodes: grouped(chgE, function (type, ev) {
+        var rows = ev.map(function (e) {
+          var d = (e.storedFp || 0) - e.before;
+          return el('tr', null, nameCell(e), td(fmt(e.before), 'num'), td(e.rule || '—', 'rule'),
+            td(pill(e.storedCx)), td(fmt(e.storedFp), 'num'), td(d > 0 ? '+' + fmt(d) : (d < 0 ? '−' + fmt(-d) : fmt(0)), 'num'));
+        });
+        return table([t('name'), { label: t('beforeFp'), num: 1 }, t('afterRule'), t('complexity'), { label: t('afterFp'), num: 1 }, { label: t('delta'), num: 1 }], rows);
+      }) });
+    }
+    if (count(del)) {
+      tabs.push({ id: 'deleted', label: t('deleted'), chip: fmt(DEL), nodes: grouped(del, function (type, items) {
+        return table([t('name'), { label: t('baselineFp'), num: 1 }], items.map(function (it) { return el('tr', null, nameCell(it), td(fmt(num(it.fp)), 'num')); }));
+      }) });
+    }
+    if (afpRes) tabs.push({ id: 'afp', label: t('afpTab'), nodes: afpRes.nodes });
+    var effort = [];
+    if (fpa.effort) effort.push(el('div', { class: 'split2' }, effortBlock(fpa, t('efp'), EFP), efpAdj != null ? effortBlock(fpa, t('efpAdj'), efpAdj) : null), effortSource(fpa));
+    effort.push(assumptionsBlock(fpa));
+    if (fpa.effort || list(fpa.assumptions).length) tabs.push({ id: 'effort', label: t('effortTab'), nodes: effort });
+    if (scopeCount(fpa)) tabs.push({ id: 'scope', label: t('scopeTab'), chip: fmt(scopeCount(fpa)), nodes: scopePanel(fpa) });
+
+    var badges = [t('efp') + ' ' + fmt(EFP), t('updatedUfp') + ' ' + fmt(updatedUfp)];
+    if (afpRes) badges.push(t('afp') + ' ' + fmt(afpRes.afp));
+    return { title: t('reportEnh'), badges: badges, tabs: tabs };
+  }
+
+  // ── Page shell, tabs, theme, print ─────────────────────────────────────
+  function render(payload) {
+    var fpa = payload.fpa || payload;
+    LANG = payload.lang || document.documentElement.lang || 'en';
+    var base = I18N[LANG] || I18N[LANG.split('-')[0]] || I18N.en;
+    L = Object.assign({}, I18N.en, base, payload.labels || {});
+    L.typeNames = Object.assign({}, I18N.en.typeNames, base.typeNames, (payload.labels || {}).typeNames);
+    L.abbr = Object.assign({}, I18N.en.abbr, base.abbr, (payload.labels || {}).abbr);
+    try { NF = new Intl.NumberFormat(LANG, { maximumFractionDigits: 0 }); NF2 = new Intl.NumberFormat(LANG, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    catch (e) { NF = new Intl.NumberFormat('en', { maximumFractionDigits: 0 }); NF2 = new Intl.NumberFormat('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    document.documentElement.lang = LANG;
+
+    var report = fpa.project_type === 'enhancement' ? buildEnh(fpa) : buildDev(fpa);
+    document.title = (fpa.system || report.title) + ' — ' + report.title;
+
+    var app = document.getElementById('app');
+    app.appendChild(el('header', { class: 'banner' },
+      el('h1', { text: fpa.system || report.title }),
+      el('div', { class: 'subtitle', text: report.title + (fpa.date ? ' · ' + fmtDate(fpa.date) : '') }),
+      el('div', { class: 'badges' }, report.badges.map(function (b) { return el('span', { class: 'badge', text: b }); }))));
+
+    if (issues.length) {
+      report.tabs[0].nodes.unshift(el('div', { class: 'callout' }, el('details', { open: issues.length <= 5 },
+        el('summary', { text: '⚠ ' + t('checks', { n: issues.length }) }), el('p', { text: t('checksIntro') }),
+        el('ul', null, issues.map(function (s) { return el('li', { text: s }); })))));
+    }
+
+    var tabbar = el('div', { class: 'tabbar', role: 'tablist' });
+    var card = el('div', { class: 'card' }, tabbar);
+    report.tabs.forEach(function (tab) {
+      tabbar.appendChild(el('button', { type: 'button', role: 'tab', id: 'tab-' + tab.id, 'aria-controls': 'panel-' + tab.id, 'data-tab': tab.id },
+        tab.label, tab.chip != null ? el('span', { class: 'chip', text: tab.chip }) : null));
+      card.appendChild(el('section', { class: 'panel', role: 'tabpanel', id: 'panel-' + tab.id, 'aria-labelledby': 'tab-' + tab.id, tabindex: 0 },
+        el('h2', { text: tab.title || tab.label }), tab.nodes));
+    });
+    app.appendChild(card);
+
+    var tabButtons = Array.prototype.slice.call(tabbar.querySelectorAll('[role="tab"]'));
+    function select(id, focus) {
+      if (!document.getElementById('panel-' + id)) id = report.tabs[0].id;
+      tabButtons.forEach(function (b) {
+        var on = b.getAttribute('data-tab') === id;
+        b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1;
+        document.getElementById('panel-' + b.getAttribute('data-tab')).hidden = !on;
+        if (on && focus) b.focus();
+      });
+      if (history.replaceState) history.replaceState(null, '', '#' + id);
+    }
+    tabbar.addEventListener('click', function (e) { var b = e.target.closest('[role="tab"]'); if (b) select(b.getAttribute('data-tab')); });
+    tabbar.addEventListener('keydown', function (e) {
+      var i = tabButtons.indexOf(document.activeElement); if (i < 0) return;
+      var next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabButtons.length - 1 }[e.key];
+      if (next == null) return;
+      e.preventDefault();
+      select(tabButtons[(next + tabButtons.length) % tabButtons.length].getAttribute('data-tab'), true);
+    });
+    select(location.hash.slice(1) || report.tabs[0].id);
+
+    // Theme: light | dark | auto (follows the OS). Custom accents are optional.
+    var style = payload.style || {};
+    var dark = style.theme === 'dark' || (style.theme === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    var THEME_KEY = 'fp-control-theme';
+    try { var saved = localStorage.getItem(THEME_KEY); if (saved) dark = saved === 'dark'; } catch (e) { /* storage unavailable */ }
+    var btnTheme = document.getElementById('btn-theme');
+    function applyTheme(isDark) {
+      document.body.classList.toggle('dark', isDark);
+      btnTheme.textContent = isDark ? t('light') : t('dark');
+      var accent = isDark ? (style.accent_dark || style.accent) : style.accent;
+      if (accent) document.body.style.setProperty('--accent', accent); else document.body.style.removeProperty('--accent');
+    }
+    if (style.accent) {
+      document.body.style.setProperty('--grad-a', style.accent);
+      document.body.style.setProperty('--grad-b', style.accent_2 || 'color-mix(in srgb, ' + style.accent + ', #000 30%)');
+    }
+    applyTheme(dark);
+    btnTheme.addEventListener('click', function () {
+      dark = !dark; applyTheme(dark);
+      try { localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light'); } catch (e) { /* storage unavailable */ }
+    });
+
+    // Print always in light mode; "Summary" prints the Overview tab only.
+    window.addEventListener('beforeprint', function () { applyTheme(false); });
+    window.addEventListener('afterprint', function () { applyTheme(dark); document.body.classList.remove('print-simple'); });
+    var btnPrint = document.getElementById('btn-print'), btnSummary = document.getElementById('btn-summary');
+    btnPrint.textContent = t('print'); btnSummary.textContent = t('summary');
+    btnPrint.addEventListener('click', function () { window.print(); });
+    btnSummary.addEventListener('click', function () { document.body.classList.add('print-simple'); window.print(); });
+    document.getElementById('toolbar').hidden = false;
+  }
+
+  function fail(msg) {
+    document.getElementById('app').appendChild(el('div', { class: 'error' }, el('strong', { text: 'fp-control' }), el('p', { text: msg })));
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    L = I18N.en;
+    var node = document.getElementById('fpa-data');
+    if (!node) return fail(t('noData'));
+    var payload;
+    try { payload = JSON.parse(node.textContent); } catch (e) { return fail(t('badData', { msg: e.message })); }
+    try { render(payload); } catch (e) { fail(String(e && e.stack || e)); }
+  });
+})();
+</script>
+<!-- fp-control report data: append <script type="application/json" id="fpa-data">{…}</script> after this line -->

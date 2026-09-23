@@ -6,138 +6,96 @@ description: Generate a self-contained HTML report from a .fpa.yaml file
 
 You are an HTML report generator for Function Point Analysis data. Given a `.fpa.yaml` file (or split file set), produce a self-contained HTML report.
 
+**Do not write the report's HTML, CSS, or JavaScript yourself.** All layout, charts, tabs, theming, and print rules live in a fixed template (`fp-report.html`). Your job is to hand it the data. The template renders everything in the browser and recomputes every total and complexity from the raw counts, so reports look the same every time and wrong numbers get flagged instead of copied.
+
+## Locate the assets
+
+Two files ship together: `fp-report.html` (the template) and `fpa.py` (an optional builder and validator). Look for them in this order:
+
+1. `assets/` inside the fp-control repository, when working in it
+2. `~/.fp-control/` (the installed location — see `agents.md`)
+
+If neither exists, stop and tell the user to install the assets (copy `assets/fp-report.html` and `assets/fpa.py` from the fp-control repository to `~/.fp-control/`).
+
 ## Input
 
-The user provides a `.fpa.yaml` filename. Read the file and detect the report type:
-
-- If `project_type: enhancement` — generate an **Enhancement Report** (see below)
-- Otherwise — generate a **Development Report** (see below)
-
-If the file has `split: true`, load each detail file listed in `detail_files` on demand — one per function-type tab. Do not load all detail files upfront; load only what is needed for each section.
-
-For enhancement files with `split: true`, load `detail_files.add` and `detail_files.chg` on demand for the Added and Changed tabs respectively.
+The user provides a `.fpa.yaml` filename. Both development and enhancement files (`project_type: enhancement`), single-file or split (`split: true`), and schema versions 1.1 and 1.2 are supported — the template detects the report type itself.
 
 ## Output filename
 
-Derive the output filename by replacing the `.fpa.yaml` suffix with `.html`:
+Replace the `.fpa.yaml` suffix with `.html`, in the same directory:
 
 - `my-system.fpa.yaml` → `my-system.html`
 - `my-system-enhancement-2026-06-06.fpa.yaml` → `my-system-enhancement-2026-06-06.html`
 
-The file must have no external dependencies (all CSS and JS inlined) and work in both interactive and print modes.
-
 ## Language
 
-Detect the language to use for all report labels, headings, and static text from the user's current session. If the user has not written anything yet, infer from the `boundary` field in the `.fpa.yaml` file. Generate the entire HTML output — tab names, column headers, badge labels, button text — in that language.
+Detect the report language from the user's current session. If the user has not written anything yet, infer it from the `boundary` field. Pass it as a BCP 47 tag (e.g. `en`, `pt-BR`, `es`).
 
----
+- `en` and `pt-BR` labels are built into the template.
+- For any other language, write a small JSON file of label overrides (translate the values of the `I18N.en` object in the template — at minimum the tab names, column headers, and `typeNames`; optionally `gscNames` as an array of 14 strings) and pass it with `--labels`. Untranslated keys fall back to English.
+
+Numbers and dates are formatted for the chosen language automatically (e.g. `1,07` and `19 de junho de 2026` in pt-BR).
 
 ## Confirm style preferences
 
-Before generating the report, briefly show the user the default look and ask if they'd like to change anything:
+If the `.fpa.yaml` file has a `report_style` block, use it and **do not ask** — the user already chose. Mention the style in one line so they can change it if they want.
 
-- **Layout**: centered "printed document" card — soft gray page, ~960px container, gradient indigo header banner, compact UFP badge (see Style rules below)
+Otherwise, before generating the report, briefly show the user the default look and ask if they'd like to change anything:
+
+- **Layout**: centered "printed document" card — soft gray page, ~960px container, gradient indigo header banner, compact badges
 - **Accent color**: indigo (`#4F46E5` light / `#818CF8` dark)
-- **Starting theme**: light mode (the report includes a Dark/Light toggle either way)
+- **Starting theme**: light mode (the report includes a Dark/Light toggle either way; `auto` follows the operating system)
 
-If the user has no preference or doesn't respond, proceed with these defaults. If they request a change (e.g. a different accent color, a flatter layout, dark mode by default), apply it consistently across the header, badges, charts, tabs, and complexity indicators.
+If the user has no preference or doesn't respond, proceed with these defaults. If they choose a non-default style, offer to save it in the file's `report_style` block (`accent`, `accent_dark`, `theme`) so future reports reuse it — add only that block, change nothing else in the file. Accent color and starting theme are passed as options (below). Layout changes are not options: they mean editing `fp-report.html` itself, which changes every future report — only do that if the user explicitly asks for it.
 
----
+## Generate
 
-## Generation strategy
+### Preferred: run the builder
 
-For large reports — matching the same >50-function threshold used for split YAML files — build the HTML incrementally instead of in a single `Write`:
+If `python3` with PyYAML is available:
 
-1. `Write` the shell first: `<head>` (CSS), opening `<body>`, button group, tab navigation (radio inputs + tab bar), Overview tab, AFP tab (if present), Effort & Risks tab, Scope tab (if present), and the `<script>` block — but leave `</body></html>` for the final step.
-2. Append each function-type panel in turn with `cat >> <output>.html << 'EOF' ... EOF` (single-quoted heredoc delimiter — this prevents the shell from expanding `$`, backticks, or other characters that appear in inline CSS/JS).
-3. On the final append, close with `</body></html>`.
+```sh
+python3 <assets>/fpa.py report <file>.fpa.yaml --lang <tag> [--labels <labels.json>] [--accent '#hex'] [--accent-dark '#hex'] [--theme light|dark|auto]
+```
 
-This mirrors the order detail files are loaded (one function type at a time) and keeps each write within a manageable size.
+It reads the file, merges split detail files, tolerates the trailing `---` of 1.1 files, applies the file's `report_style` (flags override it), and writes the `.html` next to the input (or to `-o <path>`). It prints the output path.
 
----
+`python3 <assets>/fpa.py check <file>.fpa.yaml` runs the same consistency checks as the report, plus file-format checks (such as a trailing `---`), and prints them in the terminal.
 
-## Development Report
+### Fallback: build the data block by hand
 
-### Structure
+When Python is not available:
 
-1. **Header** — system name, date, UFP badge. If AFP was calculated (`afp` key present), show a second AFP badge alongside it (e.g. "UFP 142 · AFP 156"). Fixed button group (top-right) with three buttons: **Dark/Light toggle** (switches theme; starts as "🌙 Dark"), **Print** (full print), **Summary** (simplified print — overview tab only)
-2. **CSS-only tab navigation** using the radio-button pattern — no JavaScript. Tabs: Overview · ILF · EIF · EI · EO · EIQ · AFP (only if `afp` key present) · Effort & Risks · Scope (only if any of `deferred`, `rejected`, or `notes` is present and non-empty). **Omit any function-type tab — and its panel entirely — when that type has zero items** (e.g. no EIF tab, no EIF radio input, no EIF panel when EIF count is 0; same rule applies to any type). Each function-type tab label shows its FP subtotal as a small chip (e.g. "ILF · 91"). The Scope tab chip shows the total item count across all three fields (e.g. "Scope · 9").
-3. **Overview tab** — system boundary paragraph + inline SVG stacked bar chart + UFP summary table with columns: Type · Items · FP Total · % of UFP (grand total row shows 100%). Omit zero-item types from the stacked bar chart and from the table body (still show the grand total row). If AFP was calculated, append a one-row AFP summary below the UFP table: ID · VAF · AFP.
-4. **One tab per function type** (ILF, EIF, EI, EO, EIQ — only those with items > 0), each containing:
-   - A **complexity reference card** showing the IFPUG matrix for that type (RET/DET for data functions; FTR/DET for transaction functions) with the weight for each complexity level
-   - A **full item table** with columns:
-     - Data functions (ILF / EIF): Name · RET · DET · Rule applied · Complexity · FP
-     - Transaction functions (EI / EO / EIQ): Name · FTR · DET · Rule applied · Complexity · FP
-   - The **Rule applied** column shows the exact matrix cell used, e.g. `RET 2–5, DET 1–19 → Low` or `FTR 2, DET 5–15 → Avg`
-   - Subtotal row at the bottom showing total FP and a complexity breakdown, e.g. `Low×11 · Avg×13 · High×0`
-5. **AFP tab** (only render if `afp` key present) — two sections:
-   - **GSC scoring table**: columns # · General System Characteristic · Score · Bar (a small inline visual bar, e.g. filled squares, proportional to the 0–5 score)
-   - **VAF calculation card**: shows UFP, ID, VAF formula (`0.65 + ID × 0.01 = VAF`), and AFP result prominently
-6. **Effort & Risks tab** — effort estimate table (optimistic / typical / conservative); if AFP was calculated, show a second effort block using AFP as the base alongside the UFP block. If the `assumptions` key is present in the YAML and non-empty, render the list below the effort table. Omit the section entirely if the key is absent.
-7. **Scope tab** (only render if at least one of `deferred`, `rejected`, or `notes` is present and non-empty) — three optional sections, each omitted when the corresponding key is absent:
-   - **Deferred** — labeled section with a bullet list of `deferred` items. Use a distinct visual treatment (e.g. amber/yellow accent or clock icon) to convey "pending future scope."
-   - **Rejected** — labeled section with a bullet list of `rejected` items. Use a muted or strikethrough-adjacent treatment (e.g. red/gray accent or × icon) to convey "out of scope."
-   - **Notes** — labeled section rendered as a two-column table (Date · Note), sorted newest-first. Each entry is `{date, text}`; if an entry is a plain string (no `date` key), render it without a date. Use a neutral accent (e.g. indigo or blue).
+1. Read the `.fpa.yaml` file. If `split: true`, read each file listed in `detail_files` and put its list under the matching top-level key (`ilf`, `eif`, `ei`, `eo`, `eiq` for development files; `add`, `chg`, `cfp` for enhancement files), then drop nothing else — keep every other key as is.
+2. Convert the result to JSON **without recomputing or changing any value**. Keep keys and numbers exactly as in the YAML; write an empty YAML value (bare `ilf:`) as `null`.
+3. Wrap it in a payload: `{"lang": "<tag>", "style": {…}, "labels": {…optional…}, "fpa": { …the file… }}`. For `style`, use the file's `report_style` block if present, otherwise `{"theme": "light"}` plus any accent the user chose.
+4. Replace every `<` in the JSON text with `<` — this keeps text such as `</script>` inside a note from breaking the page.
+5. Copy the template and append the data block:
 
----
+```sh
+cp <assets>/fp-report.html <output>.html
+cat >> <output>.html << 'EOF'
+<script type="application/json" id="fpa-data">{ …payload… }</script>
+EOF
+```
 
-## Enhancement Report
+Use a single-quoted heredoc delimiter (`'EOF'`) so the shell does not expand `$` or backticks. Do not edit anything else in the copied template.
 
-### Structure
+## After generating
 
-**Header** — system name, date, DEFP badge ("DEFP 38"), Updated UFP badge ("Updated UFP 180"). AFP badge if `afp` key present.
-
-**Tabs**: Overview · Added · Changed · Deleted · AFP (only if `afp` key present) · Effort & Risks · Scope (only if any of `deferred`, `rejected`, or `notes` is present and non-empty; same structure and rules as the Development Report Scope tab)
-
-**Overview tab**
-- Enhancement scope paragraph (from `boundary`)
-- Reconciliation table: Baseline UFP · DEL (−) · CHG_before (−) · CHG_after (+) · ADD (+) · Updated UFP · DEFP
-- Inline SVG grouped bar chart: baseline vs. updated UFP per function type (ILF, EIF, EI, EO, EIQ)
-
-**Added tab** — new functions from the `add` block, grouped by type (ILF, EIF, EI, EO, EIQ), each with its full detail table (same columns as the Development report function-type tabs)
-
-**Changed tab** — functions from the `chg` block, grouped by type; each row shows Name · Before FP · After (new metrics + complexity + FP) · Delta FP
-
-**Deleted tab** — functions from the `del` block, grouped by type; columns: Name · Baseline FP
-
-**AFP tab** (only if `afp` key present) — same structure as the Development Report AFP tab, using the updated GSC scores and Updated UFP as the base
-
-**Effort & Risks tab** — effort table using DEFP as the base. If the `assumptions` key is present in the YAML and non-empty, render the list below the effort table. Omit the section entirely if the key is absent.
-
-**Scope tab** — same structure and rendering rules as the Development Report Scope tab.
+Tell the user the output path. If the report shows a **Consistency checks** box (the template lists any item whose stored complexity/FP disagrees with the IFPUG tables, and any stored total that differs from the recomputed one), summarize those findings in one or two lines and suggest fixing the `.fpa.yaml` with `/fp-control`. For more detail, run `fpa.py check`.
 
 ---
 
-## Shared rules
+## What the report contains (rendered by the template)
 
-### Interactivity
+For reference when answering questions about the report — you do not build any of this.
 
-- CSS-only tabs using hidden radio inputs (`position:absolute; opacity:0; pointer-events:none`) and the `~` sibling combinator — radio inputs must be the first children of the tabs container, followed by the tab bar and panels
-- **Dark/Light toggle**: JavaScript `toggleTheme()` adds/removes a `dark` class on `<body>` and updates the button label accordingly
-- **Print button** triggers `window.print()` directly
-- **Summary print button** triggers `printSimple()`: adds class `print-simple` to `<body>`, calls `window.print()`, then removes the class via the `afterprint` event
+**Development report** — header with UFP (and AFP) badges; tabs: Overview (boundary, stacked bar chart, UFP table with % of UFP, AFP row) · one tab per function type with items (complexity reference matrix with per-cell item counts, item table with Rule applied, subtotal with Low/Avg/High breakdown) · AFP (GSC table, VAF card) · Effort & Risks (UFP- and AFP-based effort, assumptions) · Scope (deferred, rejected, notes newest-first).
 
-### Print (`@media print`)
+**Enhancement report** — header with EFP, Updated UFP (and AFP) badges; tabs: Overview (scope, reconciliation table with Application and Project columns, baseline-vs-updated chart per type) · Added (including conversion functions, if any) · Changed (before / after / Δ) · Deleted · AFP (with VAF before/after and EFP adjusted) · Effort & Risks (EFP-based) · Scope. For schema 1.1 files, the report shows the IFPUG EFP (including deletions) and notes that the stored `defp` excluded them.
 
-- Hide the button group and tab bar
-- Force all panels visible (`display: block !important`) — except when `body.print-simple` is set, which shows only the Overview panel
-- Each panel starts on a new page (`page-break-before: always` on `.panel + .panel`)
-- Remove shadows and border-radius
-- Ensure tables paginate cleanly (`break-inside: avoid` on rows)
-- SVG chart must render correctly on paper — use dark fills or patterns instead of color-only encoding
-- **Always print in light mode**: reset all CSS custom properties to light values inside `@media print { :root, body.dark { ... } }` — dark mode must never appear in print output
+**Checkpoint files** (`status: partial`) get a "Partial count" badge and a note listing the types counted so far.
 
-### Style
-
-The report should read like a **printed document**, not a dashboard or web app — a centered card floating on a soft background, not a full-width dense layout.
-
-- **Layout**: center the content in a `.container` (max-width ~960px) on a soft neutral page background (e.g. `#f5f7fa` light / `#0f0f1a` dark). The side margins are intentional — they create contrast between the "page" and the "document" sitting on it.
-- **Header**: a banner with a gradient background (e.g. `linear-gradient(135deg, #4F46E5, #7C3AED)`), white text, rounded corners (~16px). Show the system name as the title, a one-line subtitle (report type + date), and a UFP badge below it. Keep the badge **compact** — small font size and modest pill padding (e.g. `0.25rem 0.85rem`); it should read as a small label, not an oversized button.
-- **Tabs + panels**: wrap the tab bar and all panels together in a single rounded card (white/dark surface, subtle shadow, `border-radius: 12px`, `overflow: hidden`) that sits inside the container — a panel floating on the page, not tabs sitting bare in the page flow.
-- **Spacing**: generous internal padding and a comfortable base font size (~15px body text, ~1.75rem panel padding) — this is a document meant to be read, not a dense data table to scan.
-- Implement theming with CSS custom properties (`:root` for light defaults, `body.dark` overrides for dark mode)
-- Light mode: soft gray page background, white card surfaces, dark text, indigo accent (#4F46E5)
-- Dark mode: near-black background (#0f0f1a), dark surfaces, light text, lighter indigo (#818CF8) for accents; badge colors inverted for legibility
-- Tab bar scrollable horizontally on small screens (`overflow-x: auto; scrollbar-width: none`)
-- Fully responsive layout
-- Self-contained — no `<link>` to external stylesheets, no `<script src="">` to CDNs
+**Shared** — function IDs shown next to names; the effort tab states whether rates are team data or illustrative defaults (`effort.source`); tabs and panels with zero items are omitted; keyboard-accessible tabs with deep links (`report.html#ei`); Dark/Light toggle (the viewer's choice is remembered in the browser); **Print** (all tabs, one per page, always light mode) and **Summary** (Overview only); fully responsive; no external dependencies.
