@@ -35,6 +35,7 @@ Both skills install themselves the first time any agent reads `agents.md`. It de
 | Cursor | `~/.cursor/rules/fp-control.mdc` and `~/.cursor/rules/fp-control-html.mdc` |
 | Windsurf | `~/.codeium/windsurf/memories/fp-control.md` and `~/.codeium/windsurf/memories/fp-control-html.md` |
 | Any other agent | Platform's global instructions or memories directory |
+| All platforms (report assets) | `~/.fp-control/fp-report.html` and `~/.fp-control/fpa.py` |
 
 ## Manual installation
 
@@ -46,6 +47,7 @@ If you prefer to install manually — or your platform sandboxes file writes:
 | Cursor | `mkdir -p ~/.cursor/rules && cp fp-control.md ~/.cursor/rules/fp-control.mdc && cp fp-control-html.md ~/.cursor/rules/fp-control-html.mdc` |
 | Windsurf | `mkdir -p ~/.codeium/windsurf/memories && cp fp-control.md ~/.codeium/windsurf/memories/fp-control.md && cp fp-control-html.md ~/.codeium/windsurf/memories/fp-control-html.md` |
 | Any other agent | Paste each file's contents as a system prompt or custom skill |
+| Report assets (all platforms) | `mkdir -p ~/.fp-control && cp assets/fp-report.html assets/fpa.py ~/.fp-control/` |
 
 ## What the skills cover
 
@@ -62,13 +64,35 @@ If you prefer to install manually — or your platform sandboxes file writes:
 | 7 | Produce planning summary — including scope tracking: deferred items (future phase), rejected items (explicitly excluded), and dated negotiation notes |
 | 8 | Save as `.fpa.yaml` — compact YAML for future sessions, enhancement baseline loading, and HTML generation |
 
-Enhancement Project mode (triggered by referencing an existing `.fpa.yaml`): classify existing functions as ADD / CHG / DEL, compute DEFP and Updated UFP, optionally recalculate AFP, save as a new `.fpa.yaml`.
+Enhancement Project mode (triggered by referencing an existing `.fpa.yaml`): classify existing functions as ADD / CHG / DEL (plus one-time conversion functions, CFP), compute EFP (IFPUG enhancement size: ADD + CHG after + CFP + DEL) and Updated UFP, optionally recalculate AFP, save as a new `.fpa.yaml`.
 
 **`/fp-control-html`** — HTML report generator:
 
-Reads any `.fpa.yaml` (development or enhancement, single-file or split) and produces a self-contained `.html` report with tabbed navigation, SVG charts, dark/light mode, and print support. Includes a **Scope tab** (when present) that surfaces deferred items, rejected scope, and stakeholder notes. The HTML filename matches the YAML filename with `.fpa.yaml` replaced by `.html`.
+Reads any `.fpa.yaml` (development or enhancement, single-file or split) and produces a self-contained `.html` report. The agent does not write the HTML: it passes the data to a fixed template (`assets/fp-report.html`, built by `assets/fpa.py report` when Python is available), which renders the report in the browser and recomputes every total and complexity from the raw counts — any stored value that disagrees with the IFPUG tables is listed in a **Consistency checks** box. The report has tabbed navigation, SVG charts, dark/light mode, and print support. Includes a **Scope tab** (when present) that surfaces deferred items, rejected scope, and stakeholder notes. The HTML filename matches the YAML filename with `.fpa.yaml` replaced by `.html`.
 
 The entire session is conducted in the language the user writes in. The HTML report is generated in the same language.
+
+## Validating files
+
+`assets/fpa.py check` (Python 3 + PyYAML) validates any `.fpa.yaml` file without an agent:
+
+```sh
+python3 assets/fpa.py check examples/bookshop.fpa.yaml            # exit 1 on errors
+python3 assets/fpa.py check my-system.fpa.yaml --strict           # warnings fail too
+python3 assets/fpa.py report my-system.fpa.yaml --lang pt-BR      # build the HTML report
+```
+
+It re-applies the IFPUG complexity tables to every item and checks stored totals (UFP, EFP, Updated UFP, AFP, effort hours), duplicate IDs and names, enhancement cross-references (every CHG/DEL must exist in the baseline), and file format. The same checks run inside the HTML report. The IFPUG tables live in both `assets/fpa.py` and `assets/fp-report.html` — change them together.
+
+## Repository layout
+
+| Path | Contents |
+|------|----------|
+| `fp-control.md`, `fp-control-html.md` | The two skills |
+| `assets/` | Report template and `fpa.py` (installed to `~/.fp-control/`) |
+| `examples/` | A small development count and an enhancement of it (schema 1.2) — valid inputs for trying the report |
+| `tests/` | Regression tests for `fpa.py`: `python3 -m unittest discover tests` |
+| `CHANGELOG.md` | Schema versions and migration notes |
 
 ## License
 
