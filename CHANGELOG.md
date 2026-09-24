@@ -10,7 +10,7 @@ Not a schema change — `.fpa.yaml` files are unaffected.
 - `fpa.py` is optional: `check` for terminal/CI validation, `report` produces the same file as `fpa.sh`.
 - The report also flags file-format problems (e.g. a trailing `---`).
 - Reports built with the earlier JSON data block still open.
-- `install.sh` replaces the silent auto-install: `status` shows what is installed and whether the checkout is in sync with `origin/main`; `install` records checksums (so copies edited by the user are kept), and adds a `post-merge` hook that reports the status after every `git pull`. Agents reading `agents.md` report the status and ask before installing.
+- `install.sh` replaces the silent auto-install: `status` shows what is installed and whether the checkout is in sync with `origin/main`; `install` records checksums (so copies edited by the user are kept), and adds `post-merge` and `post-rewrite` hooks that report the status after every `git pull`, merging or rebasing. Agents reading `agents.md` report the status and ask before installing.
 
 ## 1.2 — 2026-09-23
 

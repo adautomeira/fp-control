@@ -8,9 +8,10 @@
 # status     Read-only. Compares the installed copies with this checkout, and this checkout
 #            with origin/main (runs `git fetch` unless --no-fetch).
 # install    Copies the two skills to each agent platform and the report assets to
-#            ~/.fp-control/, records what was installed, and adds a git post-merge hook that
-#            prints the status after every `git pull` (skip with --no-hook). Installed files
-#            edited since the last install are kept unless --force.
+#            ~/.fp-control/, records what was installed, and adds git post-merge and
+#            post-rewrite hooks that print the status after every `git pull`, merging or
+#            rebasing (skip with --no-hook). Installed files edited since the last install
+#            are kept unless --force.
 # uninstall  Removes the files recorded by the last install, and the hook. Files edited
 #            since the install are kept unless --force.
 #
@@ -22,11 +23,11 @@
 set -u
 
 repo=$(cd "$(dirname "$0")" && pwd)
-assets_dir=${FP_CONTROL_HOME:-$HOME/.fp-control}
+assets_dir=$HOME/.fp-control   # the skills look here; keep in sync with fp-control-html.md
 record="$assets_dir/INSTALLED"
 skills="fp-control fp-control-html"
 asset_files="fp-report.html fpa.sh fpa.py LICENSE-js-yaml"
-hook_marker="# fp-control post-merge hook"
+hook_names="post-merge post-rewrite"   # post-rewrite covers `git pull --rebase` with local commits
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   B=$'\033[1m' G=$'\033[32m' Y=$'\033[33m' R=$'\033[31m' D=$'\033[2m' N=$'\033[0m'
@@ -174,25 +175,34 @@ EOF
 }
 
 # ── install ───────────────────────────────────────────────────────────────
+hooks_dir() {
+  h=$(git -C "$repo" rev-parse --git-path hooks)
+  case $h in /*) echo "$h";; *) echo "$repo/$h";; esac
+}
+is_our_hook() { grep -q 'fp-control' "$1" 2>/dev/null && grep -q 'added by install.sh' "$1" 2>/dev/null; }
+
 install_hook() {
   [ -n "$git_ok" ] || return 0
-  hooks=$(git -C "$repo" rev-parse --git-path hooks)
-  case $hooks in /*) ;; *) hooks="$repo/$hooks";; esac
-  hook="$hooks/post-merge"
-  if [ -f "$hook" ] && ! grep -q "$hook_marker" "$hook"; then
-    printf '%s! %s already exists and is not ours — left unchanged%s\n' "$Y" "$(pretty "$hook")" "$N"
-    return 0
-  fi
+  hooks=$(hooks_dir)
   mkdir -p "$hooks"
-  before=$(sum "$hook")
-  cat > "$hook" <<EOF
-#!/bin/sh
-$hook_marker — added by install.sh; remove with: bash install.sh uninstall
-# After every git pull, show whether the installed copies match this checkout.
-bash "\$(git rev-parse --show-toplevel)/install.sh" status --short --no-fetch || true
-EOF
-  chmod +x "$hook"
-  [ "$before" = "$(sum "$hook")" ] || printf '  + git hook   %s (status after every git pull)\n' "$(pretty "$hook")"
+  for name in $hook_names; do
+    hook="$hooks/$name"
+    if [ -f "$hook" ] && ! is_our_hook "$hook"; then
+      printf '%s! %s already exists and is not ours — left unchanged%s\n' "$Y" "$(pretty "$hook")" "$N"
+      continue
+    fi
+    before=$(sum "$hook")
+    {
+      printf '#!/bin/sh\n'
+      printf '# fp-control %s hook — added by install.sh; remove with: bash install.sh uninstall\n' "$name"
+      printf '# After git pull, show whether the installed copies match this checkout.\n'
+      # post-rewrite also runs after `git commit --amend`; only a rebase can bring in new commits
+      [ "$name" = post-rewrite ] && printf '[ "$1" = rebase ] || exit 0\n'
+      printf 'bash "$(git rev-parse --show-toplevel)/install.sh" status --short --no-fetch || true\n'
+    } > "$hook"
+    chmod +x "$hook"
+    [ "$before" = "$(sum "$hook")" ] || printf '  + git hook   %s (status after git pull)\n' "$(pretty "$hook")"
+  done
 }
 
 cmd_install() {
@@ -251,9 +261,10 @@ cmd_uninstall() {
   rm -f "$record"
   git_info
   if [ -n "$git_ok" ]; then
-    hook="$(git -C "$repo" rev-parse --git-path hooks)/post-merge"
-    case $hook in /*) ;; *) hook="$repo/$hook";; esac
-    if [ -f "$hook" ] && grep -q "$hook_marker" "$hook"; then rm -f "$hook"; printf '  - %s\n' "$(pretty "$hook")"; fi
+    for name in $hook_names; do
+      hook="$(hooks_dir)/$name"
+      if is_our_hook "$hook"; then rm -f "$hook"; printf '  - %s\n' "$(pretty "$hook")"; fi
+    done
   fi
   rmdir "$assets_dir" 2>/dev/null || true
   printf 'fp-control uninstalled.\n'

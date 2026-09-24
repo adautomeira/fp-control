@@ -22,7 +22,6 @@ class InstallTest(unittest.TestCase):
         (self.home / ".claude").mkdir(parents=True)
         self.env = dict(os.environ, HOME=str(self.home), NO_COLOR="1",
                         GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
-        self.env.pop("FP_CONTROL_HOME", None)
         # a remote containing the current working-tree versions of the installable files
         seed = self.tmp / "seed"
         seed.mkdir()
@@ -66,6 +65,7 @@ class InstallTest(unittest.TestCase):
             self.assertTrue(self.installed(rel).exists(), rel)
         self.assertTrue(os.access(self.installed(".fp-control/fpa.sh"), os.X_OK))
         self.assertTrue((self.a / ".git" / "hooks" / "post-merge").exists())
+        self.assertTrue((self.a / ".git" / "hooks" / "post-rewrite").exists())
         code, out = self.run_install(self.a, "status", "--no-fetch")
         self.assertEqual(code, 0, out)
         self.assertIn("Everything up to date", out)
@@ -90,6 +90,29 @@ class InstallTest(unittest.TestCase):
 
         self.run_install(self.a, "install", "--no-fetch")
         self.assertIn("upstream change", self.installed(".claude/commands/fp-control.md").read_text())
+
+    def test_rebasing_pull_with_local_commits_reports_status(self):
+        self.run_install(self.a, "install", "--no-fetch")
+        with open(self.a / "README.local", "w") as f:
+            f.write("local work\n")
+        self.git(self.a, "add", "README.local")
+        self.git(self.a, "commit", "-qm", "local commit")
+        with open(self.b / "fp-control.md", "a") as f:
+            f.write("\n<!-- upstream change -->\n")
+        self.git(self.b, "commit", "-qam", "upstream change")
+        self.git(self.b, "push", "-q", "origin", "HEAD:main")
+        pull = subprocess.run(["git", "pull", "-q", "--rebase", "origin", "main"], cwd=self.a,
+                              env=self.env, capture_output=True, text=True)
+        out = pull.stdout + pull.stderr
+        self.assertIn("fp-control:", out)                      # printed by the post-rewrite hook
+        self.assertIn("1 installed file(s) need an update", out)
+        self.assertIn("1 commit(s) ahead of origin/main", out)  # the rebased local commit, not pushed yet
+
+    def test_amend_does_not_print_status(self):
+        self.run_install(self.a, "install", "--no-fetch")
+        amend = subprocess.run(["git", "commit", "-q", "--amend", "--no-edit", "--allow-empty"], cwd=self.a,
+                               env=self.env, capture_output=True, text=True)
+        self.assertNotIn("fp-control:", amend.stdout + amend.stderr)
 
     def test_edited_copy_is_kept_unless_forced(self):
         self.run_install(self.a, "install", "--no-fetch")
@@ -139,6 +162,7 @@ class InstallTest(unittest.TestCase):
         self.assertTrue(edited.exists())
         self.assertFalse(self.installed(".fp-control/fp-report.html").exists())
         self.assertFalse((self.a / ".git" / "hooks" / "post-merge").exists())
+        self.assertFalse((self.a / ".git" / "hooks" / "post-rewrite").exists())
 
     def test_not_a_git_checkout(self):
         plain = self.tmp / "plain"
