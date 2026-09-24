@@ -10,12 +10,12 @@ You are an HTML report generator for Function Point Analysis data. Given a `.fpa
 
 ## Locate the assets
 
-Two files ship together: `fp-report.html` (the template) and `fpa.py` (an optional builder and validator). Look for them in this order:
+The assets ship together: `fp-report.html` (the template, with a bundled YAML parser), `fpa.sh` (the report builder — needs only bash), and `fpa.py` (optional terminal validator — needs python3 + PyYAML). Look for them in this order:
 
 1. `assets/` inside the fp-control repository, when working in it
 2. `~/.fp-control/` (the installed location — see `agents.md`)
 
-If neither exists, stop and tell the user to install the assets (copy `assets/fp-report.html` and `assets/fpa.py` from the fp-control repository to `~/.fp-control/`).
+If neither exists, stop and tell the user to install the assets (copy the contents of `assets/` from the fp-control repository to `~/.fp-control/`).
 
 ## Input
 
@@ -51,40 +51,34 @@ If the user has no preference or doesn't respond, proceed with these defaults. I
 
 ## Generate
 
-### Preferred: run the builder
+The report is built by **copying** the template and appending the `.fpa.yaml` file(s) **unchanged**. The template parses the YAML in the browser. Never convert, summarize, or re-type the data: the report's consistency checks are only meaningful if they run on the exact file on disk.
 
-If `python3` with PyYAML is available:
-
-```sh
-python3 <assets>/fpa.py report <file>.fpa.yaml --lang <tag> [--labels <labels.json>] [--accent '#hex'] [--accent-dark '#hex'] [--theme light|dark|auto]
-```
-
-It reads the file, merges split detail files, tolerates the trailing `---` of 1.1 files, applies the file's `report_style` (flags override it), and writes the `.html` next to the input (or to `-o <path>`). It prints the output path.
-
-`python3 <assets>/fpa.py check <file>.fpa.yaml` runs the same consistency checks as the report, plus file-format checks (such as a trailing `---`), and prints them in the terminal.
-
-### Fallback: build the data block by hand
-
-When Python is not available:
-
-1. Read the `.fpa.yaml` file. If `split: true`, read each file listed in `detail_files` and put its list under the matching top-level key (`ilf`, `eif`, `ei`, `eo`, `eiq` for development files; `add`, `chg`, `cfp` for enhancement files), then drop nothing else — keep every other key as is.
-2. Convert the result to JSON **without recomputing or changing any value**. Keep keys and numbers exactly as in the YAML; write an empty YAML value (bare `ilf:`) as `null`.
-3. Wrap it in a payload: `{"lang": "<tag>", "style": {…}, "labels": {…optional…}, "fpa": { …the file… }}`. For `style`, use the file's `report_style` block if present, otherwise `{"theme": "light"}` plus any accent the user chose.
-4. Replace every `<` in the JSON text with `<` — this keeps text such as `</script>` inside a note from breaking the page.
-5. Copy the template and append the data block:
+### With a shell (preferred)
 
 ```sh
-cp <assets>/fp-report.html <output>.html
-cat >> <output>.html << 'EOF'
-<script type="application/json" id="fpa-data">{ …payload… }</script>
-EOF
+bash <assets>/fpa.sh report <file>.fpa.yaml --lang <tag> [--labels <labels.json>] [--accent '#hex'] [--accent-dark '#hex'] [--theme light|dark|auto]
 ```
 
-Use a single-quoted heredoc delimiter (`'EOF'`) so the shell does not expand `$` or backticks. Do not edit anything else in the copied template.
+Needs only bash and standard Unix tools (Linux, macOS, WSL, Git Bash). It appends the index file and every file listed in `detail_files`, and writes the `.html` next to the input (or to `-o <path>`), printing the output path. `--accent`/`--theme` override the file's `report_style`; omit them to use it. `python3 <assets>/fpa.py report` accepts the same options and produces an identical file.
+
+### Without a shell
+
+Use your file tools to create `<output>.html` containing, in order:
+
+1. The template `fp-report.html`, copied as is.
+2. `<script type="application/json" id="fpa-options">{"lang":"<tag>"}</script>` — add `,"style":{"accent":"#hex","theme":"dark"}` only when the user asked for a style different from the file's `report_style`.
+3. `<script type="text/yaml" data-role="index" data-name="<file name>">`, a newline, the `.fpa.yaml` file's content **exactly as it is on disk**, then `</script>`.
+4. For split files, one more block per file in `detail_files`: `<script type="text/yaml" data-role="detail" data-name="<detail file name>">`, its content, `</script>`.
+
+Inside a block, write any `</script` in the file content as `<\/script` and any `<!--` as `<\!--` (the template undoes this). Copy the file content verbatim — a changed digit here would silently change the report.
+
+## Check
+
+To see the checks in the terminal (e.g. after editing a file), run `bash <assets>/fpa.sh check <file>.fpa.yaml`. It runs `fpa.py check`, so it needs python3 + PyYAML; without them it says so, and the report itself shows the same checks.
 
 ## After generating
 
-Tell the user the output path. If the report shows a **Consistency checks** box (the template lists any item whose stored complexity/FP disagrees with the IFPUG tables, and any stored total that differs from the recomputed one), summarize those findings in one or two lines and suggest fixing the `.fpa.yaml` with `/fp-control`. For more detail, run `fpa.py check`.
+Tell the user the output path. If the report shows a **Consistency checks** box (the template lists any item whose stored complexity/FP disagrees with the IFPUG tables, and any stored total that differs from the recomputed one), summarize those findings in one or two lines and suggest fixing the `.fpa.yaml` with `/fp-control`. The box also lists file-format problems such as a trailing `---`.
 
 ---
 

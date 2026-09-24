@@ -1,7 +1,11 @@
 """Regression tests for assets/fpa.py — run with: python3 -m unittest discover tests"""
+import ast
 import contextlib
 import copy
 import io
+import re
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -147,15 +151,77 @@ class EnhChecksTest(unittest.TestCase):
 
 
 class ReportTest(unittest.TestCase):
-    def test_payload_escapes_script_and_keeps_style(self):
-        d = load(DEV)
-        d["notes"].append({"date": "2026-09-02", "text": "</script><b>x"})
-        d["report_style"] = {"accent": "#0f766e", "theme": "dark"}
-        payload = fpa.build_payload(d, "pt-BR", theme=None)
-        self.assertNotIn("</script>", payload)
-        self.assertIn('"accent": "#0f766e"', payload)
-        self.assertIn('"theme": "dark"', payload)
-        self.assertIn('"theme": "auto"', fpa.build_payload(d, theme="auto"))
+    TEMPLATE = (ROOT / "assets" / "fp-report.html").read_text(encoding="utf-8")
+
+    def build_both(self, src, *opts):
+        """Build a report with fpa.sh and fpa.py; return both outputs."""
+        with tempfile.TemporaryDirectory() as tmp:
+            sh_out, py_out = Path(tmp) / "sh.html", Path(tmp) / "py.html"
+            subprocess.run(["bash", str(ROOT / "assets" / "fpa.sh"), "report", str(src), "-o", str(sh_out), *opts],
+                           check=True, capture_output=True)
+            with contextlib.redirect_stdout(io.StringIO()):
+                fpa.main(["report", str(src), "-o", str(py_out), *opts])
+            return sh_out.read_text(encoding="utf-8"), py_out.read_text(encoding="utf-8")
+
+    @unittest.skipUnless(shutil.which("bash"), "bash not available")
+    def test_bash_and_python_reports_are_identical(self):
+        for src in (DEV, ENH):
+            for opts in ((), ("--lang", "pt-BR", "--theme", "dark", "--accent", "#0f766e")):
+                sh, py = self.build_both(src, *opts)
+                self.assertEqual(sh, py, f"{src.name} {opts}")
+
+    @unittest.skipUnless(shutil.which("bash"), "bash not available")
+    def test_yaml_is_embedded_unchanged_and_escaped(self):
+        original = DEV.read_text().replace("Gift cards", "Gift </ScRiPt> <!-- cards")
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "hostile.fpa.yaml"
+            src.write_text(original)
+            sh, _ = self.build_both(src)
+        data = sh[len(self.TEMPLATE):]
+        self.assertNotRegex(data, r"(?i)</script(?!>\n)")      # only the block terminators remain
+        self.assertNotIn("<!--", data)
+        block = data.split('data-role="index" data-name="hostile.fpa.yaml">\n', 1)[1].split("</script>\n", 1)[0]
+        # undo the escaping exactly as the template does, and get the original file back
+        restored = re.sub(r"<\\(/script)", r"<\1", block, flags=re.I).replace("<\\!--", "<!--")
+        self.assertEqual(restored, original)
+
+    @unittest.skipUnless(shutil.which("bash"), "bash not available")
+    def test_split_detail_files_are_embedded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            index = yaml.safe_load(DEV.read_text())
+            for t in ("ilf", "ei"):
+                Path(tmp, f"shop.fpa.{t}.yaml").write_text(yaml.safe_dump({"fp_control": "1.2", "system": "Bookshop", "type": t, t: index.pop(t)}))
+            index.update(split=True, detail_files={"ilf": "shop.fpa.ilf.yaml", "ei": "shop.fpa.ei.yaml"})
+            Path(tmp, "shop.fpa.yaml").write_text("---\n" + yaml.safe_dump(index, sort_keys=False))
+            sh, py = self.build_both(Path(tmp, "shop.fpa.yaml"))
+        self.assertEqual(sh, py)
+        self.assertIn('data-role="detail" data-name="shop.fpa.ilf.yaml"', sh)
+        self.assertIn('data-role="detail" data-name="shop.fpa.ei.yaml"', sh)
+
+    def test_template_scripts_cannot_end_early(self):
+        # the template's own inline scripts must not contain sequences that end a script element
+        for body in re.findall(r"<script>(.*?)</script>", self.TEMPLATE, re.S):
+            self.assertNotRegex(body, r"(?i)</script|<!--|<script")
+
+    def test_template_bundles_js_yaml(self):
+        self.assertIn("js-yaml 4.1.0", self.TEMPLATE)
+        self.assertTrue((ROOT / "assets" / "LICENSE-js-yaml").exists())
+
+    def test_ifpug_tables_match_python(self):
+        js = self.TEMPLATE
+        for name, (row, rows, cols) in {m: (d["row"], d["rows"], d["cols"]) for m, d in fpa.MATRICES.items()}.items():
+            m = re.search(name + r":\s*\{ row: '(\w+)', rows: (\[.*?\]\]), cols: (\[.*?\]\]) \}", js)
+            self.assertIsNotNone(m, name)
+            js_rows = ast.literal_eval(m.group(2).replace("INF", "1e999"))
+            js_cols = ast.literal_eval(m.group(3).replace("INF", "1e999"))
+            self.assertEqual(m.group(1), row)
+            self.assertEqual([hi for _, hi in js_rows], rows, name)
+            self.assertEqual([hi for _, hi in js_cols], cols, name)
+        for t, (matrix, key, weights) in fpa.TYPE_INFO.items():
+            m = re.search(t + r":\s*\{ m: '(\w+)',\s*key: '(\w+)', w: \{ Low: (\d+), Avg: (\d+), High: (\d+) \} \}", js)
+            self.assertIsNotNone(m, t)
+            self.assertEqual((m.group(1), m.group(2)), (matrix, key), t)
+            self.assertEqual([int(x) for x in m.group(3, 4, 5)], [weights["Low"], weights["Avg"], weights["High"]], t)
 
 
 if __name__ == "__main__":

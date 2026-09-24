@@ -2,6 +2,15 @@
 
 Schema versions of the `.fpa.yaml` format (the `fp_control` key). Both skills read every version listed here; `/fp-control` always saves with the current one.
 
+## Tooling — 2026-09-23
+
+Not a schema change — `.fpa.yaml` files are unaffected.
+
+- Reports are built by `assets/fpa.sh` (bash only): the template now bundles a YAML parser (js-yaml 4.1.0, MIT) and reads the `.fpa.yaml` files appended to it unchanged, so no conversion step and no Python are needed.
+- `fpa.py` is optional: `check` for terminal/CI validation, `report` produces the same file as `fpa.sh`.
+- The report also flags file-format problems (e.g. a trailing `---`).
+- Reports built with the earlier JSON data block still open.
+
 ## 1.2 — 2026-09-23
 
 ### Counting fixes

@@ -266,11 +266,11 @@ Produce a YAML-only `.fpa.yaml` file — no Markdown body. To generate a visual 
 - Before saving, recompute every item's complexity and FP from its RET/FTR and DET using the tables above, and check that `ufp` equals the sum of the item FPs.
 - Store each total once. Do not add fields that repeat numbers already derivable from the item lists (the 1.1 `function_counts` block is no longer written).
 
-**Validate after saving.** If `python3` with PyYAML is available and the fp-control assets are installed (`assets/` in the repository, or `~/.fp-control/`), run:
+**Validate after saving.** If the fp-control assets are installed (`assets/` in the repository, or `~/.fp-control/`), run:
 
-    python3 <assets>/fpa.py check <file>.fpa.yaml
+    bash <assets>/fpa.sh check <file>.fpa.yaml
 
-It re-applies the IFPUG tables to every item, checks every stored total, duplicate IDs and names, and (for enhancements) that every CHG/DEL refers to a baseline function. Fix anything it reports and save again. Without Python, do the same checks by hand before saving.
+It re-applies the IFPUG tables to every item, checks every stored total, duplicate IDs and names, and (for enhancements) that every CHG/DEL refers to a baseline function. Fix anything it reports and save again. The check uses python3 + PyYAML; if they are missing it exits with status 2 and says so — then do the same checks by hand, and tell the user that `/fp-control-html` will show them in the report's Consistency checks box.
 
 **Report style (optional).** If the user chose a report style in `/fp-control-html` (accent color, starting theme), keep it in the `report_style` block so later reports reuse it without asking again.
 

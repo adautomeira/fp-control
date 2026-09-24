@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""fp-control helper: validate .fpa.yaml files and build HTML reports.
+"""fp-control helper (optional): validate .fpa.yaml files and build HTML reports.
+
+The main tool is fpa.sh, which needs only bash. This script adds terminal validation
+(`check`) and needs python3 + PyYAML. `fpa.sh check` calls it when available.
 
 Usage:
     python3 fpa.py check  <file.fpa.yaml> [--strict]
@@ -11,13 +14,13 @@ Usage:
 total, ID and cross-reference. It exits with status 1 when it finds errors (with --strict,
 warnings count as errors too).
 
-`report` merges split detail files into one payload and appends it to the report template
-(fp-report.html, next to this script). The template does all rendering in the browser and
-runs the same checks as `check` — keep the tables below in sync with it.
+`report` produces exactly the same file as `fpa.sh report`: the template followed by the
+YAML files, unchanged (tests/test_fpa.py compares the two byte for byte). The template
+parses them in the browser and runs the same checks as `check` — keep the IFPUG tables
+below in sync with fp-report.html (a test compares them).
 """
 import argparse
-import datetime
-import json
+import re
 import sys
 from pathlib import Path
 
@@ -321,41 +324,65 @@ def run_check(path, strict):
     return 1 if failed else 0
 
 
-# ── Report ───────────────────────────────────────────────────────────────
+# ── Report (mirror of fpa.sh) ────────────────────────────────────────────
 def default_output(src):
     name = src.name
-    stem = name[: -len(".fpa.yaml")] if name.endswith(".fpa.yaml") else src.stem
-    return src.with_name(stem + ".html")
+    for suffix in (".fpa.yaml", ".yaml", ".yml"):
+        if name.endswith(suffix):
+            return src.with_name(name[: -len(suffix)] + ".html")
+    return src.with_name(name + ".html")
 
 
-def json_default(value):
-    if isinstance(value, (datetime.date, datetime.datetime)):
-        return value.isoformat()
-    raise TypeError(f"not JSON serializable: {type(value).__name__}")
+def escape_block(text):
+    """Same escaping as fpa.sh: only "</script" and "<!--" are special inside <script>."""
+    return re.sub(r"</(script)", r"<\\/\1", text, flags=re.IGNORECASE).replace("<!--", "<\\!--")
 
 
-def build_payload(fpa, lang="en", labels=None, accent=None, accent_dark=None, theme=None):
-    style = dict(fpa.get("report_style") or {})       # saved preferences first, CLI flags win
-    for k, v in (("accent", accent), ("accent_dark", accent_dark), ("theme", theme)):
-        if v:
-            style[k] = v
-    style.setdefault("theme", "light")
-    payload = {"lang": lang, "style": style, "fpa": fpa}
+def escape_attr(text):
+    return text.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def options_json(lang, accent, accent_dark, theme):
+    style = [f'"{k}":"{v}"' for k, v in (("theme", theme), ("accent", accent), ("accent_dark", accent_dark)) if v]
+    return '{"lang":"%s"%s}' % (lang or "en", ',"style":{%s}' % ",".join(style) if style else "")
+
+
+def build_report(path, lang="en", labels=None, accent=None, accent_dark=None, theme=None):
+    path = Path(path)
+    read = lambda p: Path(p).read_text(encoding="utf-8")
+    parts = [TEMPLATE.read_text(encoding="utf-8"),
+             '<script type="application/json" id="fpa-options">%s</script>\n' % options_json(lang, accent, accent_dark, theme)]
     if labels:
-        payload["labels"] = labels
-    # '<' → < keeps any "</script>" inside user text from closing the data block
-    return json.dumps(payload, ensure_ascii=False, default=json_default).replace("<", "\\u003c")
+        parts.append('<script type="application/json" id="fpa-labels">' + escape_block(read(labels)) + "</script>\n")
+    parts.append('<script type="text/yaml" data-role="index" data-name="%s">\n' % escape_attr(path.name)
+                 + escape_block(read(path)) + "</script>\n")
+    for fname in (load(path).get("detail_files") or {}).values():
+        detail = path.parent / fname
+        if detail.exists():
+            parts.append('<script type="text/yaml" data-role="detail" data-name="%s">\n' % escape_attr(str(fname))
+                         + escape_block(read(detail)) + "</script>\n")
+        else:
+            print(f"fpa.py: warning: detail file not found: {fname}", file=sys.stderr)
+    return "".join(parts)
 
 
 def run_report(args):
-    fpa = load_merged(args.input)
-    labels = json.loads(args.labels.read_text(encoding="utf-8")) if args.labels else None
-    data = build_payload(fpa, args.lang, labels, args.accent, args.accent_dark, args.theme)
     out = args.output or default_output(args.input)
-    out.write_text(TEMPLATE.read_text(encoding="utf-8")
-                   + '<script type="application/json" id="fpa-data">' + data + "</script>\n", encoding="utf-8")
+    out.write_text(build_report(args.input, args.lang, args.labels, args.accent, args.accent_dark, args.theme), encoding="utf-8")
     print(out)
     return 0
+
+
+def lang_tag(v):
+    if not re.fullmatch(r"[A-Za-z0-9-]+", v):
+        raise argparse.ArgumentTypeError(f"invalid language tag '{v}' (use a tag like en or pt-BR)")
+    return v
+
+
+def hex_color(v):
+    if not re.fullmatch(r"#[0-9A-Fa-f]+", v):
+        raise argparse.ArgumentTypeError(f"invalid color '{v}' (use #RRGGBB)")
+    return v
 
 
 def main(argv=None):
@@ -367,10 +394,10 @@ def main(argv=None):
     r = sub.add_parser("report", help="build the HTML report")
     r.add_argument("input", type=Path)
     r.add_argument("-o", "--output", type=Path)
-    r.add_argument("--lang", default="en", help="BCP 47 tag for labels and number formatting (built in: en, pt-BR)")
+    r.add_argument("--lang", default="en", type=lang_tag, help="BCP 47 tag for labels and number formatting (built in: en, pt-BR)")
     r.add_argument("--labels", type=Path, help="JSON file with label overrides (for languages other than en / pt-BR)")
-    r.add_argument("--accent")
-    r.add_argument("--accent-dark")
+    r.add_argument("--accent", type=hex_color)
+    r.add_argument("--accent-dark", type=hex_color)
     r.add_argument("--theme", choices=["light", "dark", "auto"], help="default: report_style.theme from the file, else light")
     args = ap.parse_args(argv)
     return run_check(args.input, args.strict) if args.cmd == "check" else run_report(args)
