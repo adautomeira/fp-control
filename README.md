@@ -21,21 +21,23 @@ In short: AI changes how fast you build, not how much you need to build. FPA mea
 This repository includes two files that help AI agents understand how to work with the skills without manual setup:
 
 - **`agents.md`** — vendor-agnostic instructions: what the skills do, how to invoke them, and how to install them (always visibly — the agent reports the status and asks before installing). Any agent on any platform can read this file.
-- **`CLAUDE.md`** — Claude Code's project context file. Claude Code loads it automatically whenever you open this directory, which causes it to also load `agents.md` via the `@agents.md` import. Claude Code then checks the install status and tells you whether the skills are installed and current; once installed, `/fp-control` and `/fp-control-html` are available as commands in every Claude Code session.
+- **`CLAUDE.md`** — Claude Code's project context file. Claude Code loads it automatically whenever you open this directory, which causes it to also load `agents.md` via the `@agents.md` import. `agents.md` then tells Claude Code to check the install status and report whether the skills are installed and current; once installed, `/fp-control` and `/fp-control-html` are available as commands in every Claude Code session.
 
 Other platforms (Cursor, Windsurf) do not auto-load `CLAUDE.md`: ask the agent to read `agents.md`, or run `install.sh` yourself.
 
 ## Installing
 
-`install.sh` (bash only) installs both skills and the report assets, and tells you exactly what it did:
+`install.sh` installs both skills and the report assets and tells you exactly what it did. It needs bash and standard Unix tools (`awk`, `sed`, `cksum`); `git` is used for the sync checks and the hooks, and without it `install.sh` still installs, just without them.
 
 ```sh
-bash install.sh status      # read-only: what is installed, and is this checkout in sync with origin/main?
+bash install.sh status      # what is installed, and is this checkout in sync with origin/main?
 bash install.sh install     # install or update (asks nothing; your agent asks you first)
-bash install.sh uninstall   # remove what was installed
+bash install.sh uninstall   # remove what was installed, and the git hooks
 ```
 
-`install` installs for every agent platform found on the machine — or only the ones you name with `--platform claude,cursor,windsurf`, plus any `--dest <dir>` — and the report assets to `~/.fp-control/`. It records the installed files and their checksums in `~/.fp-control/INSTALLED`, so it can tell an **update from GitHub** apart from a copy **you edited** after installing; edited copies are kept unless you pass `--force`.
+- **`status`** installs nothing. It runs `git fetch` to compare this checkout with `origin/main` (`--no-fetch` skips it) and lists every installed file as up to date, not installed, update available, or edited since install. Exit status: 0 when everything is up to date and the checkout is not behind, 1 when something needs doing.
+- **`install`**, the first time, installs for every agent platform found on the machine (`~/.claude`, `~/.cursor`, `~/.codeium/windsurf`), or only the ones you name with `--platform claude,cursor,windsurf`, plus any `--dest <dir>`. Later `install` and `status` runs reuse the platforms recorded last time; pass `--platform`/`--dest` again to change them. The report assets always go to `~/.fp-control/`. It records the installed files and their checksums in `~/.fp-control/INSTALLED`, so it can tell an **update from GitHub** apart from a copy **you edited** after installing; edited copies are kept unless you pass `--force`.
+- **`uninstall`** removes the recorded files and the git hooks. Files you edited since the install are kept unless you pass `--force`.
 
 | Platform | Installed to |
 |----------|-------------|
@@ -54,13 +56,13 @@ Through an agent, installing is never silent: when an agent reads `agents.md` in
 Installed skills are copies, so they do not change by themselves. `install.sh` keeps you informed at the two moments that matter:
 
 - **When GitHub has something new** — `install.sh status` fetches `origin/main` and says whether your checkout is **✔ in sync**, behind (run `git pull`), ahead (not pushed), or diverged.
-- **Right after `git pull`** — `install.sh install` adds a git `post-merge` hook, so every pull ends with one line such as:
+- **Right after `git pull`** — `install.sh install` adds git `post-merge` and `post-rewrite` hooks to the checkout it runs from, so every pull — merging, fast-forwarding, or rebasing (`git pull --rebase`) — ends with one line such as:
 
   ```
   fp-control: ✔ in sync with origin/main (2b7b307) — 1 installed file(s) need an update: bash ~/Documents/fp-control/install.sh install
   ```
 
-  Skip the hook with `install --no-hook`; an existing `post-merge` hook of your own is never overwritten.
+  Git hooks are not copied by `git clone`, so another checkout gets the hooks only when you run `install.sh install` there. Skip them with `install --no-hook`; an existing hook of your own is never overwritten. The hooks don't fetch, so they compare with `origin/main` as of that pull.
 
 After updating, check the schema changes in [`CHANGELOG.md`](CHANGELOG.md): saved `.fpa.yaml` files from older versions still load, and re-saving them with `/fp-control` upgrades them.
 
@@ -77,15 +79,15 @@ After updating, check the schema changes in [`CHANGELOG.md`](CHANGELOG.md): save
 | 5 | Rate 14 General System Characteristics and calculate Adjusted Function Points (AFP) (optional) |
 | 6 | Estimate effort — UFP and AFP based (optional). Asks for the team's own hours-per-FP data first; the built-in 8/14/20 rates are illustrative defaults, not a benchmark, and the file records which was used |
 | 7 | Produce planning summary — including scope tracking: deferred items (future phase), rejected items (explicitly excluded), and dated negotiation notes |
-| 8 | Save as `.fpa.yaml` (schema 1.2) — compact YAML for future sessions, enhancement baseline loading, and HTML generation; files over 50 functions are split into an index plus one file per type. The file is then validated with `fpa.sh check` when Python is available (see [Tools](#tools)) |
+| 8 | Save as `.fpa.yaml` (schema 1.2) — compact YAML for future sessions, enhancement baseline loading, and HTML generation; files over 50 functions are split into an index plus one file per type. The skill then runs `fpa.sh check`, which needs Python (see [Tools](#tools)); without it, the skill checks by hand and the report shows the same checks |
 
-Enhancement Project mode (reference an existing `.fpa.yaml` and say you want to measure changes to the deployed system; referencing a file alone opens it for review or editing): baseline functions are matched by ID and classified as ADD / CHG / DEL, plus one-time conversion functions (CFP). The skill computes EFP (IFPUG enhancement size: ADD + CHG after + CFP + DEL) and Updated UFP, optionally recalculates AFP and EFP adjusted, and saves a new `.fpa.yaml` that includes `updated_functions`, the application after the enhancement, which the next enhancement loads.
+Enhancement Project mode (reference an existing `.fpa.yaml` and say you want to measure changes to the deployed system; referencing a file alone opens it for review or editing): baseline functions are matched by ID and classified as ADD / CHG / DEL, plus one-time conversion functions (CFP). The skill computes EFP (IFPUG enhancement size: ADD + CHG after + CFP + DEL) and Updated UFP, optionally recalculates AFP and EFP adjusted, and saves a new `.fpa.yaml` that includes `updated_functions`, the application after the enhancement, which the next enhancement loads. Without a saved baseline file, it asks for the baseline UFP and you list the affected functions.
 
 **`/fp-control-html`** — HTML report generator:
 
 Reads any `.fpa.yaml` (development or enhancement, single-file or split) and produces a self-contained `.html` report. The agent does not write the HTML or convert any data: it copies a fixed template (`assets/fp-report.html`) and appends the `.fpa.yaml` file(s) unchanged — `assets/fpa.sh` does this with nothing but bash. The template parses the YAML in the browser, renders the report, and recomputes every total and complexity from the raw counts — any stored value that disagrees with the IFPUG tables is listed in a **Consistency checks** box. The report has tabbed navigation, SVG charts, dark/light mode, and print support. Includes a **Scope tab** (when present) that surfaces deferred items, rejected scope, and stakeholder notes. The HTML filename matches the YAML filename with `.fpa.yaml` replaced by `.html`.
 
-- **Style**: the skill asks once about accent color and starting theme; a choice saved in the file's `report_style` block is reused without asking.
+- **Style**: the skill asks about accent color and starting theme unless the file has a `report_style` block, and offers to save your choice there so later reports reuse it without asking.
 - **Languages**: labels for English and Brazilian Portuguese (`en`, `pt-BR`) are built in; for other languages the agent passes a small JSON file of translated labels. Numbers and dates follow the chosen language.
 - **No shell?** Agents without a shell (e.g. on Windows without WSL or Git Bash) build the same report with their file tools: copy the template and append the YAML verbatim, as described in `fp-control-html.md`.
 
@@ -101,9 +103,9 @@ bash assets/fpa.sh report my-system.fpa.yaml --lang pt-BR --theme dark
 bash assets/fpa.sh check  my-system.fpa.yaml                       # optional, see below
 ```
 
-The report is the validator: it re-applies the IFPUG complexity tables to every item and checks stored totals (UFP, EFP, Updated UFP, AFP), duplicate IDs and names, enhancement cross-references (every CHG/DEL must exist in the baseline), and file format, listing any problem in a **Consistency checks** box.
+The report is the validator: it re-applies the IFPUG complexity tables to every item and checks stored totals (UFP, EFP, Updated UFP, AFP, EFP adjusted), duplicate IDs and names, enhancement cross-references (every CHG/DEL must exist in the baseline), and file format, listing any problem in a **Consistency checks** box.
 
-**Optional: terminal validation.** `fpa.sh check` runs `assets/fpa.py check`, which needs **python3 + PyYAML** (`pip install pyyaml`). It prints the same checks plus effort totals and exits with status 1 on errors (`--strict`: warnings too) — useful for CI, pre-commit hooks, and for agents checking a file right after saving it. Nothing in the skills requires Python; without it, `fpa.sh check` says so and exits with status 2.
+**Optional: terminal validation.** `fpa.sh check` runs `assets/fpa.py check`, which needs **python3 + PyYAML** (`pip install pyyaml`). It prints the same checks plus a few more (stored effort hours, a missing `effort.source`, an outdated schema version) and exits with status 1 on errors (`--strict`: warnings too) — useful for CI, pre-commit hooks, and for agents checking a file right after saving it. Nothing in the skills requires Python; without it, `fpa.sh check` says so and exits with status 2.
 
 `fpa.py report` produces a file identical to `fpa.sh report`. The IFPUG tables live in both `fpa.py` and `fp-report.html`; the test suite fails if they differ. The template bundles [js-yaml](https://github.com/nodeca/js-yaml) 4.1.0 (MIT, see `assets/LICENSE-js-yaml`).
 
@@ -112,11 +114,13 @@ The report is the validator: it re-applies the IFPUG complexity tables to every 
 | Path | Contents |
 |------|----------|
 | `fp-control.md`, `fp-control-html.md` | The two skills |
+| `agents.md`, `CLAUDE.md` | Instructions for AI agents (see [Project files for AI agents](#project-files-for-ai-agents)) |
 | `install.sh` | Installer and status check (bash) |
 | `assets/` | Report template, `fpa.sh` (builder), `fpa.py` (optional validator) — installed to `~/.fp-control/` |
 | `examples/` | A small development count and an enhancement of it (schema 1.2) — valid inputs for trying the report |
 | `tests/` | Regression tests for `fpa.py`, `fpa.sh` and `install.sh` (python3 + PyYAML, git): `python3 -m unittest discover tests` |
-| `CHANGELOG.md` | Schema versions and migration notes |
+| `CHANGELOG.md` | Schema versions, tooling changes, and migration notes |
+| `LICENSE` | MIT, with a request to reference this repository in forks |
 
 ## License
 
