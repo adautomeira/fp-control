@@ -15,7 +15,7 @@ The assets ship together: `fp-report.html` (the template, with a bundled YAML pa
 1. `assets/` inside the fp-control repository, when working in it
 2. `~/.fp-control/` (the installed location — see `agents.md`)
 
-If neither exists, stop and tell the user to install the assets (copy the contents of `assets/` from the fp-control repository to `~/.fp-control/`).
+If neither exists, stop and tell the user the assets are not installed: from the fp-control repository, `bash install.sh status` shows what is missing and `bash install.sh install` installs it (or copy the contents of `assets/` to `~/.fp-control/` by hand).
 
 ## Input
 

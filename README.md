@@ -20,38 +20,49 @@ In short: AI changes how fast you build, not how much you need to build. FPA mea
 
 This repository includes two files that help AI agents understand how to work with the skills without manual setup:
 
-- **`agents.md`** — vendor-agnostic instructions: what the skills do, how to invoke them, and how to install them. Any agent on any platform can read this file.
-- **`CLAUDE.md`** — Claude Code's project context file. Claude Code loads it automatically whenever you open this directory, which causes it to also load `agents.md` via the `@agents.md` import. That triggers the self-install below, after which `/fp-control` and `/fp-control-html` are available as commands in every Claude Code session.
+- **`agents.md`** — vendor-agnostic instructions: what the skills do, how to invoke them, and how to install them (always visibly — the agent reports the status and asks before installing). Any agent on any platform can read this file.
+- **`CLAUDE.md`** — Claude Code's project context file. Claude Code loads it automatically whenever you open this directory, which causes it to also load `agents.md` via the `@agents.md` import. Claude Code then checks the install status and tells you whether the skills are installed and current; once installed, `/fp-control` and `/fp-control-html` are available as commands in every Claude Code session.
 
-Other platforms (Cursor, Windsurf) do not auto-load `CLAUDE.md`, so their users rely on the self-install mechanism described below.
+Other platforms (Cursor, Windsurf) do not auto-load `CLAUDE.md`: ask the agent to read `agents.md`, or run `install.sh` yourself.
 
-## Self-installing
+## Installing
 
-Both skills install themselves when an agent reads `agents.md` inside this repository. It detects the platform and writes the two skill files to the appropriate global skill locations, plus the report assets to `~/.fp-control/`. The installed files are copies — see [Updating](#updating) to refresh them after pulling changes.
+`install.sh` (bash only) installs both skills and the report assets, and tells you exactly what it did:
+
+```sh
+bash install.sh status      # read-only: what is installed, and is this checkout in sync with origin/main?
+bash install.sh install     # install or update (asks nothing; your agent asks you first)
+bash install.sh uninstall   # remove what was installed
+```
+
+`install` installs for every agent platform found on the machine — or only the ones you name with `--platform claude,cursor,windsurf`, plus any `--dest <dir>` — and the report assets to `~/.fp-control/`. It records the installed files and their checksums in `~/.fp-control/INSTALLED`, so it can tell an **update from GitHub** apart from a copy **you edited** after installing; edited copies are kept unless you pass `--force`.
 
 | Platform | Installed to |
 |----------|-------------|
 | Claude Code | `~/.claude/commands/fp-control.md` and `~/.claude/commands/fp-control-html.md` |
 | Cursor | `~/.cursor/rules/fp-control.mdc` and `~/.cursor/rules/fp-control-html.mdc` |
 | Windsurf | `~/.codeium/windsurf/memories/fp-control.md` and `~/.codeium/windsurf/memories/fp-control-html.md` |
-| Any other agent | Platform's global instructions or memories directory |
+| Any other agent | `--dest <dir>`, or paste each file's contents as a system prompt or custom skill |
 | All platforms (report assets) | `~/.fp-control/` — every file in `assets/` |
 
-## Manual installation
+Through an agent, installing is never silent: when an agent reads `agents.md` in this repository it runs `install.sh status`, tells you the result, and asks before installing or updating. Agents that cannot run commands or write outside the workspace say so and give you the command to run.
 
-If you prefer to install manually — or your platform sandboxes file writes:
+**Without bash** (e.g. Windows without WSL or Git Bash), copy the files by hand to the locations above: the two skill files (renamed to `.mdc` for Cursor) and everything in `assets/` to `~/.fp-control/`.
 
-| Platform | Commands |
-|----------|---------|
-| Claude Code | `mkdir -p ~/.claude/commands && cp fp-control.md ~/.claude/commands/fp-control.md && cp fp-control-html.md ~/.claude/commands/fp-control-html.md` |
-| Cursor | `mkdir -p ~/.cursor/rules && cp fp-control.md ~/.cursor/rules/fp-control.mdc && cp fp-control-html.md ~/.cursor/rules/fp-control-html.mdc` |
-| Windsurf | `mkdir -p ~/.codeium/windsurf/memories && cp fp-control.md ~/.codeium/windsurf/memories/fp-control.md && cp fp-control-html.md ~/.codeium/windsurf/memories/fp-control-html.md` |
-| Any other agent | Paste each file's contents as a system prompt or custom skill |
-| Report assets (all platforms) | `mkdir -p ~/.fp-control && cp assets/* ~/.fp-control/` |
+## Staying up to date
 
-## Updating
+Installed skills are copies, so they do not change by themselves. `install.sh` keeps you informed at the two moments that matter:
 
-Installed skills and assets are copies, so they do not change when you `git pull`. Refresh them by opening the repository with your agent again (the self-install overwrites files that differ) or by rerunning the manual installation commands above. After updating, check the schema changes in [`CHANGELOG.md`](CHANGELOG.md): saved `.fpa.yaml` files from older versions still load, and re-saving them with `/fp-control` upgrades them.
+- **When GitHub has something new** — `install.sh status` fetches `origin/main` and says whether your checkout is **✔ in sync**, behind (run `git pull`), ahead (not pushed), or diverged.
+- **Right after `git pull`** — `install.sh install` adds a git `post-merge` hook, so every pull ends with one line such as:
+
+  ```
+  fp-control: ✔ in sync with origin/main (2b7b307) — 1 installed file(s) need an update: bash ~/Documents/fp-control/install.sh install
+  ```
+
+  Skip the hook with `install --no-hook`; an existing `post-merge` hook of your own is never overwritten.
+
+After updating, check the schema changes in [`CHANGELOG.md`](CHANGELOG.md): saved `.fpa.yaml` files from older versions still load, and re-saving them with `/fp-control` upgrades them.
 
 ## What the skills cover
 
@@ -101,9 +112,10 @@ The report is the validator: it re-applies the IFPUG complexity tables to every 
 | Path | Contents |
 |------|----------|
 | `fp-control.md`, `fp-control-html.md` | The two skills |
+| `install.sh` | Installer and status check (bash) |
 | `assets/` | Report template, `fpa.sh` (builder), `fpa.py` (optional validator) — installed to `~/.fp-control/` |
 | `examples/` | A small development count and an enhancement of it (schema 1.2) — valid inputs for trying the report |
-| `tests/` | Regression tests (python3 + PyYAML): `python3 -m unittest discover tests` |
+| `tests/` | Regression tests for `fpa.py`, `fpa.sh` and `install.sh` (python3 + PyYAML, git): `python3 -m unittest discover tests` |
 | `CHANGELOG.md` | Schema versions and migration notes |
 
 ## License
