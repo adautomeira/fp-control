@@ -18,7 +18,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 template="$here/fp-report.html"
 
 die() { printf 'fpa.sh: %s\n' "$*" >&2; exit 1; }
-usage() { sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit "${1:-0}"; }
 
 # Inside a <script> block only "</script" and "<!--" are special; the template undoes this.
 # Bracket expressions keep the match case-insensitive on both GNU and BSD sed.
