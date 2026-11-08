@@ -2,7 +2,7 @@
 
 ## Installation — always visible to the user
 
-The two skills work best installed as global commands, with the report assets in `~/.fp-control/`. Installing writes files outside this repository, so it is **never silent**: always tell the user what the status is and what you are about to do.
+The two skills work best installed as global commands, with the report assets and reference files in `~/.fp-control/`. Installing writes files outside this repository, so it is **never silent**: always tell the user what the status is and what you are about to do.
 
 When you read this file inside this repository:
 
@@ -21,7 +21,7 @@ Manual installation (what `install.sh` does):
 | Cursor | `~/.cursor/rules/fp-control.mdc` and `~/.cursor/rules/fp-control-html.mdc` |
 | Windsurf | `~/.codeium/windsurf/memories/fp-control.md` and `~/.codeium/windsurf/memories/fp-control-html.md` |
 | Any other agent | Both files in the platform's global instructions or memories directory |
-| All platforms (report assets) | `~/.fp-control/` — every file in `assets/` (`fp-report.html`, `fpa.sh`, `fpa.py`, `LICENSE-js-yaml`) |
+| All platforms (report assets and references) | `~/.fp-control/` — every file in `assets/` (`fp-report.html`, `fpa.sh`, `fpa.py`, `LICENSE-js-yaml`), and `references/` as `~/.fp-control/references/` (`yaml-schema.md`, `enhancement-mode.md`, `design-advisor.md`) |
 
 Other commands: `bash install.sh uninstall` removes what was installed (keeping edited files unless `--force`), and `bash install.sh --help` lists every option.
 
@@ -34,7 +34,7 @@ This repository provides two skills:
 
 **Claude Code** — use `/fp-control` and `/fp-control-html` as slash commands once installed (see above).
 
-**Other agents** — read `fp-control.md` or `fp-control-html.md` directly. Both files are self-contained.
+**Other agents** — read `fp-control.md` or `fp-control-html.md` directly. `fp-control.md` loads `references/design-advisor.md` (boundary and summary steps), `references/yaml-schema.md` (save step) and `references/enhancement-mode.md` (Enhancement Project Mode) when it needs them; give the agent those files too (or install them).
 
 ## What the skills do
 

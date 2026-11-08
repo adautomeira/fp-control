@@ -45,11 +45,11 @@ bash install.sh uninstall   # remove what was installed, and the git hooks
 | Cursor | `~/.cursor/rules/fp-control.mdc` and `~/.cursor/rules/fp-control-html.mdc` |
 | Windsurf | `~/.codeium/windsurf/memories/fp-control.md` and `~/.codeium/windsurf/memories/fp-control-html.md` |
 | Any other agent | `--dest <dir>`, or paste each file's contents as a system prompt or custom skill |
-| All platforms (report assets) | `~/.fp-control/` — every file in `assets/` |
+| All platforms (report assets and references) | `~/.fp-control/` — every file in `assets/`, and `references/` as `~/.fp-control/references/` |
 
 Through an agent, installing is never silent: when an agent reads `agents.md` in this repository it runs `install.sh status`, tells you the result, and asks before installing or updating. Agents that cannot run commands or write outside the workspace say so and give you the command to run.
 
-**Without bash** (e.g. Windows without WSL or Git Bash), copy the files by hand to the locations above: the two skill files (renamed to `.mdc` for Cursor) and everything in `assets/` to `~/.fp-control/`.
+**Without bash** (e.g. Windows without WSL or Git Bash), copy the files by hand to the locations above: the two skill files (renamed to `.mdc` for Cursor) everything in `assets/` to `~/.fp-control/`, and `references/` to `~/.fp-control/references/`.
 
 ## Staying up to date
 
@@ -116,6 +116,7 @@ The report is the validator: it re-applies the IFPUG complexity tables to every 
 | `fp-control.md`, `fp-control-html.md` | The two skills |
 | `agents.md`, `CLAUDE.md` | Instructions for AI agents (see [Project files for AI agents](#project-files-for-ai-agents)) |
 | `install.sh` | Installer and status check (bash) |
+| `references/` | `yaml-schema.md` (Step 8 file formats), `enhancement-mode.md` (Steps E1–E9) and `design-advisor.md` (when to ask "why" and how to give architecture observations without touching the count) — read by `fp-control.md` only when needed, installed to `~/.fp-control/references/` |
 | `assets/` | Report template, `fpa.sh` (builder), `fpa.py` (optional validator) — installed to `~/.fp-control/` |
 | `examples/` | A small development count and an enhancement of it (schema 1.2) — valid inputs for trying the report |
 | `tests/` | Regression tests for `fpa.py`, `fpa.sh` and `install.sh` (python3 + PyYAML, git): `python3 -m unittest discover tests` |

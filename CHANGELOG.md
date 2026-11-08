@@ -2,6 +2,14 @@
 
 Schema versions of the `.fpa.yaml` format (the `fp_control` key). Both skills read every version listed here; `/fp-control` always saves with the current one.
 
+## Skill structure — 2026-11-07
+
+Not a schema change — `.fpa.yaml` files are unaffected.
+
+- `fp-control.md` is split to load less context per run (710 → ~300 lines): the YAML file formats moved to `references/yaml-schema.md` and Enhancement Project Mode (Steps E1–E9) to `references/enhancement-mode.md`. The skill reads each only when it reaches that point. `install.sh` installs them to `~/.fp-control/references/`; run `bash install.sh install` to update.
+- New `references/design-advisor.md`: at the boundary step the skill may ask one "why" question when the answer changes the boundary, the size or the design; the summary adds up to three observations (citing function IDs, ending as questions or trade-offs) in a section labelled as not affecting the count. Chat only — nothing is added to the `.fpa.yaml`.
+- Both skills gained a `name` field and broader trigger descriptions (function points, IFPUG, sizing for contracts, change requests, report requests).
+
 ## Tooling — 2026-09-23
 
 Not a schema change — `.fpa.yaml` files are unaffected.

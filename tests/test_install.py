@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TRACKED = ["fp-control.md", "fp-control-html.md", "install.sh", "assets"]
+TRACKED = ["fp-control.md", "fp-control-html.md", "install.sh", "assets", "references"]
 
 
 @unittest.skipUnless(shutil.which("git") and shutil.which("bash"), "git and bash required")
@@ -61,7 +61,8 @@ class InstallTest(unittest.TestCase):
         code, out = self.run_install(self.a, "install", "--no-fetch")
         self.assertEqual(code, 0, out)
         for rel in (".claude/commands/fp-control.md", ".claude/commands/fp-control-html.md",
-                    ".fp-control/fp-report.html", ".fp-control/fpa.sh", ".fp-control/INSTALLED"):
+                    ".fp-control/fp-report.html", ".fp-control/fpa.sh", ".fp-control/INSTALLED",
+                    ".fp-control/references/yaml-schema.md", ".fp-control/references/enhancement-mode.md", ".fp-control/references/design-advisor.md"):
             self.assertTrue(self.installed(rel).exists(), rel)
         self.assertTrue(os.access(self.installed(".fp-control/fpa.sh"), os.X_OK))
         self.assertTrue((self.a / ".git" / "hooks" / "post-merge").exists())
@@ -161,6 +162,7 @@ class InstallTest(unittest.TestCase):
         code, out = self.run_install(self.a, "uninstall")
         self.assertTrue(edited.exists())
         self.assertFalse(self.installed(".fp-control/fp-report.html").exists())
+        self.assertFalse(self.installed(".fp-control/references").exists())
         self.assertFalse((self.a / ".git" / "hooks" / "post-merge").exists())
         self.assertFalse((self.a / ".git" / "hooks" / "post-rewrite").exists())
 

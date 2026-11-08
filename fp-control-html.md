@@ -1,5 +1,6 @@
 ---
-description: Generate a self-contained HTML report from a .fpa.yaml file
+name: fp-control-html
+description: "Generate a self-contained, printable HTML report (tabs, charts, dark/light mode, scope tracking) from a .fpa.yaml Function Point Analysis file. Use whenever the user wants to see, share, print, or present an FPA count, asks for a report, dashboard, or summary page of a .fpa.yaml, wants a report in another language or color theme, or asks to regenerate one after the count changed."
 ---
 
 # fp-control-html

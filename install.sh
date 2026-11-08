@@ -7,8 +7,8 @@
 #
 # status     Read-only. Compares the installed copies with this checkout, and this checkout
 #            with origin/main (runs `git fetch` unless --no-fetch).
-# install    Copies the two skills to each agent platform and the report assets to
-#            ~/.fp-control/, records what was installed, and adds git post-merge and
+# install    Copies the two skills to each agent platform and the report assets and
+#            reference files to ~/.fp-control/, records what was installed, and adds git post-merge and
 #            post-rewrite hooks that print the status after every `git pull`, merging or
 #            rebasing (skip with --no-hook). Installed files edited since the last install
 #            are kept unless --force.
@@ -27,6 +27,7 @@ assets_dir=$HOME/.fp-control   # the skills look here; keep in sync with fp-cont
 record="$assets_dir/INSTALLED"
 skills="fp-control fp-control-html"
 asset_files="fp-report.html fpa.sh fpa.py LICENSE-js-yaml"
+reference_files="yaml-schema.md enhancement-mode.md design-advisor.md"   # read by fp-control.md, installed to ~/.fp-control/references/
 hook_names="post-merge post-rewrite"   # post-rewrite covers `git pull --rebase` with local commits
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
@@ -68,6 +69,7 @@ plan() {
     for s in $skills; do printf '%s\t%s\n' "$repo/$s.md" "$d/$s.md"; done
   done
   for a in $asset_files; do printf '%s\t%s\n' "$repo/assets/$a" "$assets_dir/$a"; done
+  for r in $reference_files; do printf '%s\t%s\n' "$repo/references/$r" "$assets_dir/references/$r"; done
 }
 
 # Targets from the last install record, or the default plan when nothing is recorded.
@@ -103,7 +105,7 @@ git_info() {
     elif [ "$behind" = 0 ]; then sync=ahead
     else sync=diverged; fi
   fi
-  dirty=$(git -C "$repo" status --porcelain -- fp-control.md fp-control-html.md assets 2>/dev/null)
+  dirty=$(git -C "$repo" status --porcelain -- fp-control.md fp-control-html.md assets references 2>/dev/null)
 }
 
 # ── status ────────────────────────────────────────────────────────────────
@@ -266,7 +268,7 @@ cmd_uninstall() {
       if is_our_hook "$hook"; then rm -f "$hook"; printf '  - %s\n' "$(pretty "$hook")"; fi
     done
   fi
-  rmdir "$assets_dir" 2>/dev/null || true
+  rmdir "$assets_dir/references" "$assets_dir" 2>/dev/null || true
   printf 'fp-control uninstalled.\n'
 }
 
