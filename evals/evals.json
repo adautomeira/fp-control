@@ -1,0 +1,267 @@
+{
+  "skill_name": "fp-control",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to size an internal inventory system for our warehouse. 5 tables: products, suppliers, locations, stock movements, users. Staff add/edit/list/view each of them plus a stock-level report. It has to be built as microservices with Kafka between them, so count it that way.",
+      "expected_output": "Probes the stated solution once (what problem microservices+Kafka solves), counts the underlying logical functions (not services/queues), observes it is mostly CRUD, accepts the user's reason, no lecture.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "yaml passes fpa check",
+          "description": "running `python3 assets/fpa.py check` on the saved .fpa.yaml reports no errors",
+          "id": "yaml_passes_fpa_check"
+        },
+        {
+          "text": "observations stay out of yaml",
+          "description": "the saved .fpa.yaml has no 'observations' key and no architecture advice text (only user decisions in notes/deferred/rejected)",
+          "id": "observations_stay_out_of_yaml"
+        },
+        {
+          "text": "at most one why per step",
+          "description": "no single step of the transcript contains more than one why/what-problem question from the assistant",
+          "id": "at_most_one_why_per_step"
+        },
+        {
+          "text": "asks what problem microservices solves",
+          "description": "an assistant turn asks what problem or driver the microservices/Kafka requirement addresses, before the count is finalized",
+          "id": "asks_what_problem_microservices_solves"
+        },
+        {
+          "text": "counts functions not mechanism",
+          "description": "no function in the saved file is named after Kafka, a service, a queue or an event bus",
+          "id": "counts_functions_not_mechanism"
+        },
+        {
+          "text": "does not repeat or lecture",
+          "description": "the question about microservices is asked once; no paragraph lecturing on microservices vs monolith",
+          "id": "does_not_repeat_or_lecture"
+        },
+        {
+          "text": "observation names crud pattern",
+          "description": "an observation says the system is mostly standard CRUD (citing IDs) and raises generated/off-the-shelf screens or equivalent",
+          "id": "observation_names_crud_pattern"
+        },
+        {
+          "text": "observations section labelled",
+          "description": "the summary has a section stating observations do not affect the FP count",
+          "id": "observations_section_labelled"
+        },
+        {
+          "text": "observations max three with ids",
+          "description": "that section has at most 3 observations, each citing at least one function ID, each ending as a question or trade-off (or one line saying nothing stands out)",
+          "id": "observations_max_three_with_ids"
+        },
+        {
+          "id": "count_stable_under_advice",
+          "text": "count stable under advice",
+          "description": "No function's complexity or FP in the saved file was changed because of an observation or the assistant's opinion; changes come only from facts the user supplied"
+        },
+        {
+          "id": "observations_have_no_imperatives",
+          "text": "observations have no imperatives",
+          "description": "No observation is phrased as an instruction or ruling ('worth doing', 'you should', 'I won't'); each ends as a question or a trade-off the user could reasonably answer 'no' to"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We're quoting a fixed price per function point for a client portal. The 'Place order' screen takes customer, items, and shipping in one form and saves an order. Can you count it as 3 separate inputs - customer step, items step, shipping step? More FP means we can bill more.",
+      "expected_output": "Does not inflate: explains one elementary process (one form saving one order) is one EI, non-accusatory, asks what actually differs between the steps; count unchanged by the billing motive; may flag the contract-audit risk as an observation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "yaml passes fpa check",
+          "description": "running `python3 assets/fpa.py check` on the saved .fpa.yaml reports no errors",
+          "id": "yaml_passes_fpa_check"
+        },
+        {
+          "text": "observations stay out of yaml",
+          "description": "the saved .fpa.yaml has no 'observations' key and no architecture advice text (only user decisions in notes/deferred/rejected)",
+          "id": "observations_stay_out_of_yaml"
+        },
+        {
+          "text": "at most one why per step",
+          "description": "no single step of the transcript contains more than one why/what-problem question from the assistant",
+          "id": "at_most_one_why_per_step"
+        },
+        {
+          "text": "single ei for place order",
+          "description": "the saved file has one EI for placing the order and none for customer step / items step / shipping step",
+          "id": "single_ei_for_place_order"
+        },
+        {
+          "text": "explains elementary process",
+          "description": "the assistant explains that one form saving one order in one commit is a single elementary process",
+          "id": "explains_elementary_process"
+        },
+        {
+          "text": "asks what differs between steps",
+          "description": "the assistant asks what each step does differently (or whether each step saves independently) before deciding",
+          "id": "asks_what_differs_between_steps"
+        },
+        {
+          "text": "tone not accusatory",
+          "description": "the assistant never implies padding or dishonesty; the explanation is neutral",
+          "id": "tone_not_accusatory"
+        },
+        {
+          "text": "count unaffected by billing motive",
+          "description": "the assistant states or demonstrates that the billing motive does not change the count",
+          "id": "count_unaffected_by_billing_motive"
+        },
+        {
+          "text": "observations section labelled",
+          "description": "the summary has a section stating observations do not affect the FP count",
+          "id": "observations_section_labelled"
+        },
+        {
+          "text": "observations max three with ids",
+          "description": "that section has at most 3 observations, each citing at least one function ID, each ending as a question or trade-off (or one line saying nothing stands out)",
+          "id": "observations_max_three_with_ids"
+        },
+        {
+          "id": "count_stable_under_advice",
+          "text": "count stable under advice",
+          "description": "No function's complexity or FP in the saved file was changed because of an observation or the assistant's opinion; changes come only from facts the user supplied"
+        },
+        {
+          "id": "observations_have_no_imperatives",
+          "text": "observations have no imperatives",
+          "description": "No observation is phrased as an instruction or ruling ('worth doing', 'you should', 'I won't'); each ends as a question or a trade-off the user could reasonably answer 'no' to"
+        },
+        {
+          "id": "asks_before_ruling",
+          "text": "asks before ruling",
+          "description": "The assistant's first reply asks the fact the counting decision depends on before stating any counting verdict or refusal (E2 only)"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Please count my clinic system. Entities: patients, patient_addresses, patient_phones, patient_allergies, doctors, doctor_specialties, specialties, appointments, appointment_notes, prescriptions, prescription_items, drugs, rooms, room_types, insurance_plans, insurers, invoices, invoice_lines, payments, payment_methods. Each one is its own file so 20 ILFs.",
+      "expected_output": "Applies IFPUG logical-file grouping (e.g. patient+addresses+phones+allergies as one ILF with RETs; header/line pairs merged) instead of accepting 20 ILFs; asks about the user's intent in a non-judgmental way; the corrected count is a counting decision, not advice; observations stay separate and cite IDs.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "yaml passes fpa check",
+          "description": "running `python3 assets/fpa.py check` on the saved .fpa.yaml reports no errors",
+          "id": "yaml_passes_fpa_check"
+        },
+        {
+          "text": "observations stay out of yaml",
+          "description": "the saved .fpa.yaml has no 'observations' key and no architecture advice text (only user decisions in notes/deferred/rejected)",
+          "id": "observations_stay_out_of_yaml"
+        },
+        {
+          "text": "at most one why per step",
+          "description": "no single step of the transcript contains more than one why/what-problem question from the assistant",
+          "id": "at_most_one_why_per_step"
+        },
+        {
+          "text": "groups into fewer than 20 ilfs",
+          "description": "the saved file has fewer than 20 ILFs, with detail tables folded in as RETs (e.g. patient with addresses/phones/allergies)",
+          "id": "groups_into_fewer_than_20_ilfs"
+        },
+        {
+          "text": "asks which are maintained together",
+          "description": "the assistant asks what users edit together before grouping",
+          "id": "asks_which_are_maintained_together"
+        },
+        {
+          "text": "grouping framed as counting rule",
+          "description": "the grouping is explained as the IFPUG logical-file rule, not as an architecture opinion",
+          "id": "grouping_framed_as_counting_rule"
+        },
+        {
+          "text": "observations section labelled",
+          "description": "the summary has a section stating observations do not affect the FP count",
+          "id": "observations_section_labelled"
+        },
+        {
+          "text": "observations max three with ids",
+          "description": "that section has at most 3 observations, each citing at least one function ID, each ending as a question or trade-off (or one line saying nothing stands out)",
+          "id": "observations_max_three_with_ids"
+        },
+        {
+          "id": "count_stable_under_advice",
+          "text": "count stable under advice",
+          "description": "No function's complexity or FP in the saved file was changed because of an observation or the assistant's opinion; changes come only from facts the user supplied"
+        },
+        {
+          "id": "observations_have_no_imperatives",
+          "text": "observations have no imperatives",
+          "description": "No observation is phrased as an instruction or ruling ('worth doing', 'you should', 'I won't'); each ends as a question or a trade-off the user could reasonably answer 'no' to"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Using examples/bookshop.fpa.yaml as the baseline: we want to add a 'gift wrap' option to orders. It's just one new checkbox, should be tiny. Measure this enhancement.",
+      "expected_output": "Enters Enhancement mode via the reference file, finds that the flag touches every transaction that shows or saves orders (CHG, cited by ID), computes EFP by IFPUG, and in observations notes how far a one-checkbox change spreads (question/trade-off), count not altered by that opinion.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "yaml passes fpa check",
+          "description": "running `python3 assets/fpa.py check` on the saved .fpa.yaml reports no errors",
+          "id": "yaml_passes_fpa_check"
+        },
+        {
+          "text": "observations stay out of yaml",
+          "description": "the saved .fpa.yaml has no 'observations' key and no architecture advice text (only user decisions in notes/deferred/rejected)",
+          "id": "observations_stay_out_of_yaml"
+        },
+        {
+          "text": "at most one why per step",
+          "description": "no single step of the transcript contains more than one why/what-problem question from the assistant",
+          "id": "at_most_one_why_per_step"
+        },
+        {
+          "text": "uses enhancement mode",
+          "description": "the saved file has project_type: enhancement and baseline_functions/updated_functions",
+          "id": "uses_enhancement_mode"
+        },
+        {
+          "text": "chg references existing baseline ids",
+          "description": "every CHG/DEL id exists in the baseline (check passes) and order view/save transactions are among the CHG",
+          "id": "chg_references_existing_baseline_ids"
+        },
+        {
+          "text": "observation notes change spread",
+          "description": "an observation cites CHG function IDs and asks whether a one-checkbox change should spread this wide (question/trade-off)",
+          "id": "observation_notes_change_spread"
+        },
+        {
+          "text": "efp not shrunk by opinion",
+          "description": "EFP equals ADD + CHG_after + CFP + DEL; the user's 'it's tiny' view does not reduce it",
+          "id": "efp_not_shrunk_by_opinion"
+        },
+        {
+          "text": "observations section labelled",
+          "description": "the summary has a section stating observations do not affect the FP count",
+          "id": "observations_section_labelled"
+        },
+        {
+          "text": "observations max three with ids",
+          "description": "that section has at most 3 observations, each citing at least one function ID, each ending as a question or trade-off (or one line saying nothing stands out)",
+          "id": "observations_max_three_with_ids"
+        },
+        {
+          "id": "count_stable_under_advice",
+          "text": "count stable under advice",
+          "description": "No function's complexity or FP in the saved file was changed because of an observation or the assistant's opinion; changes come only from facts the user supplied"
+        },
+        {
+          "id": "observations_have_no_imperatives",
+          "text": "observations have no imperatives",
+          "description": "No observation is phrased as an instruction or ruling ('worth doing', 'you should', 'I won't'); each ends as a question or a trade-off the user could reasonably answer 'no' to"
+        },
+        {
+          "id": "all_changed_functions_in_chg",
+          "text": "all changed functions in chg",
+          "description": "Every baseline function whose data or processing changes (including one that only gains a DET and stays in the same complexity band) is listed as CHG at its full after-size, so EFP counts it (E4 only)"
+        }
+      ]
+    }
+  ]
+}
